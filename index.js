@@ -9,17 +9,18 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 
-// Debug: Log if credentials are loaded (remove in production)
-if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH) {
-  console.error('ERROR: Missing environment variables!');
-  console.error('ADMIN_EMAIL:', ADMIN_EMAIL ? 'Set' : 'MISSING');
-  console.error('ADMIN_PASSWORD_HASH:', ADMIN_PASSWORD_HASH ? 'Set' : 'MISSING');
-}
-
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+
+// Database helper (SQLite)
+let db;
+try {
+  db = require('./lib/db');
+} catch (e) {
+  console.error('Could not load DB module:', e.message || e);
+}
 
 // Session configuration
 app.use(session({
@@ -28,9 +29,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: { 
     secure: false, // Set to true if using HTTPS
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    httpOnly: true,
-    sameSite: 'lax'
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
@@ -77,6 +76,34 @@ app.get('/logout', (req, res) => {
 // Dashboard - Main application (protected)
 app.get('/dashboard', requireAuth, (req, res) => {
   res.render('dashboard');
+});
+
+// App state endpoints (protected)
+app.get('/api/state', requireAuth, async (req, res) => {
+  try {
+    if (db && db.getState) {
+      const state = await db.getState();
+      return res.json(state);
+    }
+    return res.json({ sponsors: [], events: [], tasks: [], notes: [], assets: [], profile: {} });
+  } catch (err) {
+    console.error('GET /api/state error', err);
+    res.status(500).json({ error: 'Unable to read state' });
+  }
+});
+
+app.post('/api/state', requireAuth, async (req, res) => {
+  try {
+    const state = req.body || {};
+    if (db && db.saveState) {
+      await db.saveState(state);
+      return res.json({ ok: true });
+    }
+    return res.status(500).json({ error: 'Persistence not available' });
+  } catch (err) {
+    console.error('POST /api/state error', err);
+    res.status(500).json({ error: 'Unable to save state' });
+  }
 });
 
 // API endpoints for data (future expansion)

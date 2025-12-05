@@ -247,6 +247,57 @@ function showNotification(message, isError = false) {
   }, 3000);
 }
 
+// Persist/load state helpers (talk to server endpoints)
+async function loadStateFromServer() {
+  try {
+    const res = await fetch('/api/state');
+    if (!res.ok) throw new Error('Failed to fetch state');
+    const state = await res.json();
+    // populate simulated arrays from server state
+    simulatedSponsors.length = 0;
+    (state.sponsors || []).forEach(s => simulatedSponsors.push(s));
+    simulatedEvents.length = 0;
+    (state.events || []).forEach(e => simulatedEvents.push(e));
+    simulatedTasks.length = 0;
+    (state.tasks || []).forEach(t => simulatedTasks.push(t));
+    simulatedNotes.length = 0;
+    (state.notes || []).forEach(n => simulatedNotes.push(n));
+    simulatedAssets.length = 0;
+    (state.assets || []).forEach(a => simulatedAssets.push(a));
+    if (state.profile) {
+      simulatedProfile.name = state.profile.name || simulatedProfile.name;
+      simulatedProfile.email = state.profile.email || simulatedProfile.email;
+      simulatedProfile.bio = state.profile.bio || simulatedProfile.bio;
+    }
+    console.log('Loaded state from server');
+  } catch (err) {
+    console.warn('Could not load state from server:', err.message || err);
+  }
+}
+
+function saveStateToServer() {
+  // Non-blocking save; fire-and-forget
+  try {
+    const payload = {
+      sponsors: simulatedSponsors,
+      events: simulatedEvents,
+      tasks: simulatedTasks,
+      notes: simulatedNotes,
+      assets: simulatedAssets,
+      profile: simulatedProfile
+    };
+    fetch('/api/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(res => {
+      if (!res.ok) console.warn('Failed to persist state');
+    }).catch(e => console.warn('Persist error', e));
+  } catch (e) {
+    console.warn('saveStateToServer error', e);
+  }
+}
+
 function showDeleteModal(message, callback) {
   // ensure sidebar is behind any confirmation overlay
   pushSidebarBehind();
@@ -620,6 +671,8 @@ function addDoc(collectionName, data) {
   const now = new Date().toISOString();
   const record = Object.assign({}, data, { id, date: now, dateAdded: now });
   collection.push(record);
+  // persist
+  try { saveStateToServer(); } catch(e){}
   return id;
 }
 
@@ -629,6 +682,7 @@ function setDoc(collectionName, id, updates) {
   const idx = collection.findIndex(d => d.id === id);
   if (idx === -1) return false;
   collection[idx] = Object.assign({}, collection[idx], updates);
+  try { saveStateToServer(); } catch(e){}
   return true;
 }
 
@@ -638,6 +692,7 @@ function deleteDoc(collectionName, id) {
   const idx = collection.findIndex(d => d.id === id);
   if (idx === -1) return false;
   collection.splice(idx, 1);
+  try { saveStateToServer(); } catch(e){}
   return true;
 }
 
@@ -647,8 +702,11 @@ function getDoc(collectionName, id) {
   return collection.find(d => d.id === id) || null;
 }
 
-function setupRealtimeListeners() {
-  // Populate demo data if empty
+async function setupRealtimeListeners() {
+  // Attempt to load persisted state from server first
+  await loadStateFromServer();
+
+  // Populate demo data if still empty
   if (simulatedSponsors.length === 0) {
     const sample = [
       {
