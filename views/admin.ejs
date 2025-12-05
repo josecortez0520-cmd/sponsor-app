@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SponsorHub Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto}</style>
+</head>
+<body class="p-6 bg-gray-100">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">Admin — State Sync</h1>
+
+    <section class="mb-6">
+      <h2 class="font-semibold mb-2">State Preview / Dry-Run</h2>
+      <p class="text-sm text-gray-600 mb-2">Paste full `app_state` JSON below to preview changes that would be applied to the normalized sponsors table.</p>
+      <textarea id="state-json" rows="10" class="w-full p-3 border rounded mb-2" placeholder='Paste JSON here'></textarea>
+      <div class="flex gap-2">
+        <button id="dry-run-btn" class="btn btn-primary bg-blue-600 text-white px-4 py-2 rounded">Dry Run</button>
+        <button id="apply-btn" class="btn bg-red-500 text-white px-4 py-2 rounded">Apply (force)</button>
+        <button id="load-current-btn" class="btn btn-secondary px-4 py-2 rounded">Load Current State</button>
+        <button id="admin-restore" class="px-3 py-2 bg-yellow-600 text-white rounded">Restore Backup</button>
+      </div>
+      <div id="dry-run-result" class="mt-4 p-3 bg-white border rounded text-sm"></div>
+    </section>
+
+    <section class="mb-6">
+      <h2 class="font-semibold mb-2">Backups</h2>
+      <div id="backups-list" class="bg-white p-3 border rounded text-sm">Loading backups...</div>
+    </section>
+
+    <section>
+      <h2 class="font-semibold mb-2">Applied Changes Log</h2>
+      <div id="applied-log" class="bg-white p-3 border rounded text-sm">Loading log...</div>
+    </section>
+
+    <div class="mt-6">
+      <a href="/dashboard" class="text-sm text-blue-600">← Back to Dashboard</a>
+    </div>
+  </div>
+
+  <script type="module" src="/admin.js"></script>
+</body>
+</html>

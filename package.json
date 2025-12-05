@@ -8,6 +8,10 @@
   },
   "scripts": {
     "start": "node index.js",
+    "dev": "nodemon --watch . --exec node index.js",
+    "migrate": "node scripts/runMigrations.js",
+    "postinstall": "node scripts/runMigrations.js || true",
+    "migrate:set-userid": "node scripts/migrateSetProfileUserId.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,9 +19,17 @@
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.5.0",
     "dotenv": "^17.2.3",
     "ejs": "^3.1.10",
     "express": "^5.2.1",
-    "express-session": "^1.18.2"
+    "express-session": "^1.18.2",
+    "minimist": "^1.2.8",
+    "pg": "^8.16.3",
+    "@supabase/supabase-js": "^2.30.0"
+  }
+  ,
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }
