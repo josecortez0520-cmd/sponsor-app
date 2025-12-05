@@ -671,6 +671,20 @@ function addDoc(collectionName, data) {
   const now = new Date().toISOString();
   const record = Object.assign({}, data, { id, date: now, dateAdded: now });
   collection.push(record);
+  // If sponsors collection and server supports normalized API, call it
+  if (collectionName === 'sponsors') {
+    fetch('/api/sponsors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(record) })
+      .then(r => r.ok ? r.json() : Promise.reject(r)).then(saved => {
+        // replace local record with server response (id may be set)
+        const idx = collection.findIndex(c => c.id === record.id);
+        if (idx !== -1) collection[idx] = saved;
+      }).catch(() => {
+        // fallback to full-state save
+        try { saveStateToServer(); } catch(e){}
+      });
+    return id;
+  }
+
   // persist
   try { saveStateToServer(); } catch(e){}
   return id;
@@ -682,6 +696,14 @@ function setDoc(collectionName, id, updates) {
   const idx = collection.findIndex(d => d.id === id);
   if (idx === -1) return false;
   collection[idx] = Object.assign({}, collection[idx], updates);
+  if (collectionName === 'sponsors') {
+    fetch(`/api/sponsors/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) })
+      .then(r => r.ok ? r.json() : Promise.reject(r)).then(saved => {
+        collection[idx] = saved;
+      }).catch(() => { try { saveStateToServer(); } catch(e){} });
+    return true;
+  }
+
   try { saveStateToServer(); } catch(e){}
   return true;
 }
@@ -692,6 +714,13 @@ function deleteDoc(collectionName, id) {
   const idx = collection.findIndex(d => d.id === id);
   if (idx === -1) return false;
   collection.splice(idx, 1);
+  if (collectionName === 'sponsors') {
+    fetch(`/api/sponsors/${id}`, { method: 'DELETE' })
+      .then(r => { if (!r.ok) throw new Error('Delete failed'); })
+      .catch(() => { try { saveStateToServer(); } catch(e){} });
+    return true;
+  }
+
   try { saveStateToServer(); } catch(e){}
   return true;
 }
