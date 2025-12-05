@@ -14,10 +14,16 @@ app.use(express.static('public'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-// Database helper (SQLite)
+// Database helper selection: prefer Supabase (HTTP) -> Postgres -> SQLite
 let db;
-// Prefer Postgres when DATABASE_URL is present (Supabase, Render Postgres)
-if (process.env.DATABASE_URL) {
+if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
+  try {
+    db = require('./lib/supabase');
+    console.log('Using Supabase HTTP client for persistence');
+  } catch (e) {
+    console.error('Could not load Supabase module:', e.message || e);
+  }
+} else if (process.env.DATABASE_URL) {
   try {
     db = require('./lib/pgdb');
     console.log('Using Postgres for persistence');
@@ -70,7 +76,7 @@ app.post('/login', (req, res) => {
   
   // Validate credentials
   if (email === ADMIN_EMAIL && bcrypt.compareSync(password, ADMIN_PASSWORD_HASH)) {
-    req.session.userId = 'admin';
+    req.session.userId = process.env.SESSION_USERID || 'josecortez0520';
     req.session.email = email;
     return res.redirect('/dashboard');
   }
@@ -87,6 +93,11 @@ app.get('/logout', (req, res) => {
 // Dashboard - Main application (protected)
 app.get('/dashboard', requireAuth, (req, res) => {
   res.render('dashboard');
+});
+
+// Admin UI (protected)
+app.get('/admin', requireAuth, (req, res) => {
+  res.render('admin');
 });
 
 // App state endpoints (protected)
@@ -106,14 +117,85 @@ app.get('/api/state', requireAuth, async (req, res) => {
 app.post('/api/state', requireAuth, async (req, res) => {
   try {
     const state = req.body || {};
+    const force = req.query && (req.query.force === 'true' || req.query.force === '1');
+    // If DB helper supports diffState and saveState, offer dry-run when force is not provided
+    if (db && db.diffState && !force) {
+      const diff = await db.diffState(state);
+      return res.json({ ok: true, dryRun: true, diff });
+    }
     if (db && db.saveState) {
       await db.saveState(state);
-      return res.json({ ok: true });
+      return res.json({ ok: true, applied: true });
     }
     return res.status(500).json({ error: 'Persistence not available' });
   } catch (err) {
     console.error('POST /api/state error', err);
     res.status(500).json({ error: 'Unable to save state' });
+  }
+});
+
+// Admin endpoints to list and download backups and logs (protected)
+app.get('/api/backups', requireAuth, (req, res) => {
+  try {
+    const backupsDir = require('path').join(__dirname, 'data', 'backups');
+    const files = require('fs').existsSync(backupsDir) ? require('fs').readdirSync(backupsDir).sort().reverse() : [];
+    res.json({ backups: files });
+  } catch (e) { res.status(500).json({ error: 'Unable to list backups' }); }
+});
+
+app.get('/api/backups/:file', requireAuth, (req, res) => {
+  try {
+    const backupsDir = require('path').join(__dirname, 'data', 'backups');
+    const file = req.params.file;
+    const filePath = require('path').join(backupsDir, file);
+    if (!require('fs').existsSync(filePath)) return res.status(404).send('Not found');
+    res.download(filePath);
+  } catch (e) { res.status(500).send('Unable to download'); }
+});
+
+app.get('/api/logs/applied-changes', requireAuth, (req, res) => {
+  try {
+    const logPath = require('path').join(__dirname, 'data', 'logs', 'applied-changes.log');
+    if (!require('fs').existsSync(logPath)) return res.json({ entries: [] });
+    const content = require('fs').readFileSync(logPath, 'utf8');
+    const lines = content.trim().split(/\n+/).reverse();
+    res.json({ entries: lines.slice(0, 200) });
+  } catch (e) { res.status(500).json({ error: 'Unable to read log' }); }
+});
+
+// Restore a backup (dry-run when not forced; apply when ?force=true)
+app.post('/api/backups/restore', requireAuth, async (req, res) => {
+  try {
+    const file = req.body && req.body.file;
+    if (!file) return res.status(400).json({ error: 'file required' });
+    const backupsDir = require('path').join(__dirname, 'data', 'backups');
+    const filePath = require('path').join(backupsDir, file);
+    if (!require('fs').existsSync(filePath)) return res.status(404).json({ error: 'not found' });
+    const content = require('fs').readFileSync(filePath, 'utf8');
+    let state;
+    try {
+      state = JSON.parse(content);
+    } catch (e) {
+      return res.status(500).json({ error: 'invalid backup JSON' });
+    }
+
+    const force = req.query && (req.query.force === 'true' || req.query.force === '1');
+    if (!force) {
+      if (db && db.diffState) {
+        const diff = await db.diffState(state);
+        return res.json({ ok: true, dryRun: true, diff });
+      }
+      return res.status(500).json({ error: 'diff not available' });
+    }
+
+    if (db && db.saveState) {
+      await db.saveState(state);
+      return res.json({ ok: true, applied: true });
+    }
+    return res.status(500).json({ error: 'persistence not available' });
+  } catch (err) {
+    console.error('POST /api/backups/restore error', err);
+    res.status(500).json({ error: 'restore failed' });
   }
 });
 
@@ -189,6 +271,16 @@ app.delete('/api/sponsors/:id', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('DELETE /api/sponsors/:id error', err);
     res.status(500).json({ error: 'Unable to delete sponsor' });
+  }
+});
+
+// Return basic session info for the logged-in user
+app.get('/api/me', requireAuth, (req, res) => {
+  try {
+    res.json({ email: req.session && req.session.email ? req.session.email : null, userId: req.session && req.session.userId ? req.session.userId : null });
+  } catch (err) {
+    console.error('GET /api/me error', err);
+    res.status(500).json({ error: 'Unable to read session' });
   }
 });
 

@@ -13,7 +13,7 @@ let currentMonth = new Date();
 let displayedSponsors = [];
 let dashboardYear = new Date().getFullYear().toString();
 const days = ['wed', 'thu', 'fri', 'sat', 'sun'];
-const userId = 'demo-user-id';
+const userId = 'josecortez0520';
 
 // Simulated Data Storage
 const simulatedSponsors = [];
@@ -189,6 +189,7 @@ const detailContactName = document.getElementById('detail-contact-name');
 const detailContactEmail = document.getElementById('detail-contact-email');
 const detailContactPhone = document.getElementById('detail-contact-phone');
 const detailSponsorType = document.getElementById('detail-sponsor-type');
+const detailEventType = document.getElementById('detail-event-type');
 const detailSponsorAmount = document.getElementById('detail-sponsor-amount');
 const detailSponsorStatus = document.getElementById('detail-sponsor-status');
 const detailSponsorNotes = document.getElementById('detail-sponsor-notes');
@@ -394,6 +395,11 @@ document.addEventListener('DOMContentLoaded', () => {
   profileNameInput.value = simulatedProfile.name;
   profileEmailInput.value = simulatedProfile.email;
   profileBioInput.value = simulatedProfile.bio;
+  // Update the top-left user info display to reflect current profile name/email
+  try {
+    const userInfoEl = document.getElementById('user-info');
+    if (userInfoEl) userInfoEl.textContent = `User: ${simulatedProfile.name || simulatedProfile.email || simulatedProfile.userId}`;
+  } catch (e) {}
   
   // Initialize app
   authReady = true;
@@ -401,6 +407,54 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCalendar();
   populateYearSelects();
   populateAssetSponsorSelect();
+
+  // After loading persisted state, ensure profile inputs reflect server state
+  // (setupRealtimeListeners calls loadStateFromServer which updates simulatedProfile)
+  const refreshProfileInputs = () => {
+    try {
+      profileIdInput.value = simulatedProfile.userId || profileIdInput.value || userId;
+      profileNameInput.value = simulatedProfile.name || '';
+      profileEmailInput.value = simulatedProfile.email || '';
+      profileBioInput.value = simulatedProfile.bio || '';
+      // reflect name immediately in the UI header
+      const userInfoEl = document.getElementById('user-info');
+      if (userInfoEl) userInfoEl.textContent = `User: ${simulatedProfile.name || simulatedProfile.email || simulatedProfile.userId}`;
+    } catch (e) { console.warn('refreshProfileInputs error', e); }
+  };
+
+  // Call once after a short delay so loadStateFromServer has time to populate simulatedProfile
+  setTimeout(refreshProfileInputs, 200);
+  // Fetch session info from server and prefill profile if persisted profile is empty
+  const fetchSessionInfo = async () => {
+    try {
+      const res = await fetch('/api/me');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data) return;
+      // Only overwrite empty profile fields so user edits are preserved
+      if (!simulatedProfile.email || simulatedProfile.email === '') {
+        simulatedProfile.email = data.email || simulatedProfile.email;
+        profileEmailInput.value = simulatedProfile.email || '';
+      }
+      if (!simulatedProfile.userId || simulatedProfile.userId === '') {
+        simulatedProfile.userId = data.userId || simulatedProfile.userId || userId;
+        profileIdInput.value = simulatedProfile.userId || profileIdInput.value || userId;
+      }
+      // Update top-left user info display
+      const userInfoEl = document.getElementById('user-info');
+      if (userInfoEl) userInfoEl.textContent = `User: ${simulatedProfile.email || simulatedProfile.userId}`;
+      // Persist the minimal profile back to server so future loads show it
+      if (!simulatedProfile.name && data.email) {
+        // leave name alone; only persist email/userId
+        try { saveStateToServer(); } catch(e){}
+      }
+    } catch (e) {
+      console.warn('fetchSessionInfo error', e);
+    }
+  };
+
+  // Call shortly after refresh so session values can be applied when profile is empty
+  setTimeout(fetchSessionInfo, 350);
   
   // Set up sidebar listeners
   menuBtn.addEventListener('click', openSidebar);
@@ -433,6 +487,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // Sign out button
   signOutBtn && signOutBtn.addEventListener('click', () => {
     window.location.href = '/logout';
+  });
+
+  // Profile form submit - save profile to simulatedProfile and persist to server
+  profileForm && profileForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    try {
+      simulatedProfile.name = profileNameInput.value || simulatedProfile.name;
+      simulatedProfile.email = profileEmailInput.value || simulatedProfile.email;
+      simulatedProfile.bio = profileBioInput.value || simulatedProfile.bio;
+      // ensure userId present
+      simulatedProfile.userId = profileIdInput.value || simulatedProfile.userId || userId;
+      // Update UI element showing user info (top-left)
+      const userInfoEl = document.getElementById('user-info');
+      if (userInfoEl) userInfoEl.textContent = `User: ${simulatedProfile.name || simulatedProfile.email || simulatedProfile.userId}`;
+      // Persist to server (fire-and-forget)
+      saveStateToServer();
+      showNotification('Profile saved');
+    } catch (e) {
+      console.warn('Profile save error', e);
+      showNotification('Unable to save profile', true);
+    }
   });
 
   // Settings handlers
@@ -517,6 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
         phone: _sponsorForm.elements['phone'].value,
         sponsorYear: _sponsorForm.elements['sponsorYear'].value || dashboardYear,
         type: _sponsorForm.elements['type'].value,
+        eventType: (_sponsorForm.elements['eventType'] && _sponsorForm.elements['eventType'].value) || '',
         amount: Number(_sponsorForm.elements['amount'].value) || 0,
         status: _sponsorForm.elements['status'].value,
         notes: _sponsorForm.elements['notes'].value,
@@ -794,6 +870,7 @@ function openSponsorDetail(sponsorId) {
   detailContactEmail.textContent = s.contact || '';
   detailContactPhone.textContent = s.phone || '';
   detailSponsorType.textContent = s.type || '';
+  if (detailEventType) detailEventType.textContent = s.eventType || '';
   detailSponsorAmount.textContent = `$${Number(s.amount||0).toLocaleString()}`;
   detailSponsorStatus.textContent = s.status || '';
   detailSponsorNotes.textContent = s.notes || '';
@@ -844,6 +921,8 @@ function showAddEditSponsorModal(sponsorId = null) {
       sponsorForm.elements['phone'].value = s.phone || '';
       sponsorForm.elements['sponsorYear'].value = s.sponsorYear || dashboardYear;
       sponsorForm.elements['type'].value = s.type || '';
+        // populate event type if present
+        try { sponsorForm.elements['eventType'].value = s.eventType || ''; } catch (e) {}
       sponsorForm.elements['amount'].value = s.amount || '';
       sponsorForm.elements['status'].value = s.status || 'Active';
       sponsorForm.elements['notes'].value = s.notes || '';
