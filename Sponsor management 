@@ -1,0 +1,3036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SponsorHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        input, select, textarea {
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1-px rgba(0, 0, 0, 0.06);
+        }
+        .notification-box {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 100;
+            transform: translateY(-150%);
+            transition: transform 0.5s ease-in-out;
+        }
+        .notification-box.show {
+            transform: translateY(0);
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            color: #4b5563;
+        }
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendar-cell {
+            padding: 10px;
+            text-align: center;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            position: relative;
+            background-color: #f9fafb;
+            transition: background-color 0.2s;
+        }
+        .calendar-cell:hover {
+            background-color: #eff6ff;
+        }
+        .calendar-cell.today {
+            background-color: #e0e7ff;
+            font-weight: 600;
+        }
+        .calendar-cell.has-event::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background-color: #2563eb;
+            border-radius: 50%;
+        }
+        .calendar-day-header {
+            font-weight: 600;
+            color: #6b7280;
+            text-align: center;
+            padding: 8px 0;
+        }
+        .modal {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Notification Box -->
+    <div id="notification-box" class="notification-box p-4 rounded-lg shadow-lg text-white font-medium"></div>
+
+    <div class="flex flex-col lg:flex-row min-h-screen">
+        <!-- Sidebar Menu -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
+        <aside id="sidebar" class="w-64 lg:w-72 h-screen my-4 mx-4 lg:m-0 bg-blue-800 p-6 rounded-xl shadow-xl transition-transform duration-300 transform -translate-x-full lg:translate-x-0 fixed lg:relative z-50">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-white">SponsorHub</h1>
+                <button id="close-sidebar-btn" class="lg:hidden text-white hover:text-blue-200 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <nav class="space-y-2" id="sidebar-nav">
+                <a href="#" class="block py-2.5 px-4 rounded-lg transition duration-200 bg-blue-700 font-semibold text-white tab-link" data-target="dashboard-section">Dashboard</a>
+                <a href="#" class="block py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-700 font-medium text-white tab-link" data-target="sponsors-section">My Sponsors</a>
+                <a href="#" class="block py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-700 font-medium text-white tab-link" data-target="contacts-section">Contacts</a>
+                <a href="#" class="block py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-700 font-medium text-white tab-link" data-target="track-section">Stay Organized</a>
+                <a href="#" class="block py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-700 font-medium text-white tab-link" data-target="yearly-tracking-section">Yearly Tracking</a>
+                <a href="#" class="block py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-700 font-medium text-white tab-link" data-target="notes-section">Notes</a>
+                <a href="#" class="block py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-700 font-medium text-white tab-link" data-target="assets-section">Assets</a>
+                <a href="#" class="block py-2.5 px-4 rounded-lg transition duration-200 hover:bg-blue-700 font-medium text-white tab-link" data-target="profile-section">My Profile</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 sm:p-8">
+            <!-- Header for mobile -->
+            <header class="flex justify-between items-center lg:hidden mb-6">
+                <button id="menu-btn" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <h1 class="text-2xl font-bold text-gray-800">SponsorHub</h1>
+            </header>
+
+            <div class="container mx-auto">
+                <div class="flex justify-between items-center mb-6 hidden lg:flex">
+                    <div id="user-info" class="text-sm text-gray-600">User ID: DEMO</div>
+                </div>
+
+                <!-- My Sponsors Section -->
+                <div id="sponsors-section" class="hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+                        <h2 class="text-3xl font-bold text-gray-800">My Sponsors</h2>
+                        <div class="flex space-x-2 mt-4 sm:mt-0">
+                            <button id="add-sponsor-btn" class="btn btn-primary shadow-md hover:shadow-lg">Add New Sponsor</button>
+                            <button id="export-sponsors-btn" class="btn btn-secondary shadow-md hover:shadow-lg">Export to CSV</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+                            <input type="text" id="sponsor-search" placeholder="Search sponsors..." class="w-full sm:w-1/2">
+                            <div class="flex-grow flex items-center space-x-2">
+                                <label for="sponsor-sort" class="text-sm font-medium text-gray-700">Sort by:</label>
+                                <select id="sponsor-sort" class="flex-1">
+                                    <option value="name">Name</option>
+                                    <option value="amount-desc">Amount (High to Low)</option>
+                                    <option value="amount-asc">Amount (Low to High)</option>
+                                    <option value="date-desc" selected>Newest First</option>
+                                    <option value="date-asc">Oldest First</option>
+                                </select>
+                            </div>
+                            <div class="flex-grow flex items-center space-x-2">
+                                <label for="sponsor-filter" class="text-sm font-medium text-gray-700">Filter by:</label>
+                                <select id="sponsor-filter" class="flex-1">
+                                    <option value="all">All Types</option>
+                                    <option value="Presenting">Presenting</option>
+                                    <option value="Associate">Associate</option>
+                                    <option value="Supporting">Supporting</option>
+                                    <option value="Contributing">Contributing</option>
+                                    <option value="Friends of Fair">Friends of Fair</option>
+                                    <option value="Media Sponsors">Media Sponsors</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="sponsor-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Sponsors will be dynamically added here -->
+                            <div class="flex justify-center items-center h-48 text-gray-500" id="loading-spinner">
+                                <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Contacts Section -->
+                <div id="contacts-section" class="hidden">
+                    <div class="card p-6">
+                        <h2 class="text-3xl font-bold mb-4 text-gray-800">My Contacts</h2>
+                        <input type="text" id="contact-search" placeholder="Search contacts..." class="w-full mb-4">
+                        <div id="contact-list" class="space-y-4">
+                             <!-- Contacts will be dynamically added here -->
+                            <div class="flex justify-center items-center h-48 text-gray-500" id="contact-loading-spinner">
+                                <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Dashboard Section -->
+                <div id="dashboard-section" class="">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-3xl font-bold text-gray-800">Dashboard</h2>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-medium text-gray-700">Year:</span>
+                            <select id="dashboard-year-select" class="px-2 py-1 rounded-md border border-gray-300"></select>
+                        </div>
+                    </div>
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-bold mb-4 text-gray-700">Sponsor Summary</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="card p-4 text-center shadow-md">
+                                <h4 class="font-medium text-gray-500">Total Contributions</h4>
+                                <p class="text-3xl font-bold text-gray-800" id="dashboard-total-amount">$0.00</p>
+                            </div>
+                            <div class="card p-4 text-center shadow-md">
+                                <h4 class="font-medium text-gray-500">Total Assets</h4>
+                                <p class="text-3xl font-bold text-gray-800" id="dashboard-total-assets">0</p>
+                            </div>
+                            <div class="card p-4 text-center shadow-md">
+                                <h4 class="font-medium text-gray-500">Total GA Tickets</h4>
+                                <p class="text-3xl font-bold text-gray-800" id="dashboard-total-ga-tickets">0</p>
+                            </div>
+                            <div class="card p-4 text-center shadow-md">
+                                <h4 class="font-medium text-gray-500">Total VIP Tickets</h4>
+                                <p class="text-3xl font-bold text-gray-800" id="dashboard-total-vip-tickets">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-bold mb-4 text-gray-700">Progress at a Glance</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Contracts Progress Bar -->
+                            <div class="card p-4 text-center shadow-md">
+                                <h4 class="font-medium text-gray-500">Contracts Received</h4>
+                                <p class="text-3xl font-bold text-gray-800 mb-2" id="dashboard-contract-status-count">0/0</p>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div id="contract-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Logos Progress Bar -->
+                            <div class="card p-4 text-center shadow-md">
+                                <h4 class="font-medium text-gray-500">Logos Received</h4>
+                                <p class="text-3xl font-bold text-gray-800 mb-2" id="dashboard-logo-status-count">0/0</p>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div id="logo-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Banners Progress Bar -->
+                            <div class="card p-4 text-center shadow-md">
+                                <h4 class="font-medium text-gray-500">Banners Received</h4>
+                                <p class="text-3xl font-bold text-gray-800 mb-2" id="dashboard-banner-status-count">0/0</p>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div id="banner-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Payments Progress Bar -->
+                            <div class="card p-4 text-center shadow-md">
+                                <h4 class="font-medium text-gray-500">Payments Received</h4>
+                                <p class="text-3xl font-bold text-gray-800 mb-2" id="dashboard-payment-status-count">0/0</p>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div id="payment-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <div class="card p-6 shadow-md">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-4">Total Contributions by Year</h3>
+                            <div class="chart-container h-72">
+                                <canvas id="dashboard-contribution-graph"></canvas>
+                            </div>
+                        </div>
+                        <div class="card p-6 shadow-md">
+                            <h3 class="text-2xl font-bold mb-4 text-gray-800">Attendance by Year</h3>
+                            <div class="chart-container h-72">
+                                <canvas id="dashboard-attendance-graph"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-4 text-gray-700">Upcoming Events</h3>
+                            <div id="upcoming-events-list" class="space-y-4">
+                                <p class="text-gray-500">No upcoming events.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold mb-4 text-gray-700">Overdue Tasks</h3>
+                            <div id="overdue-tasks-list" class="space-y-4">
+                                <p class="text-gray-500">No overdue tasks.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Stay Organized Section -->
+                <div id="track-section" class="hidden">
+                    <div class="card p-6">
+                        <h2 class="text-3xl font-bold mb-4 text-gray-800">Stay Organized</h2>
+                        
+                        <!-- Status Summary Section -->
+                        <div class="mb-8">
+                            <h3 class="text-2xl font-bold mb-4 text-gray-700">Sponsor Deliverable Status</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div class="card p-4 text-center flex flex-col justify-between shadow-md">
+                                    <h4 class="font-medium text-gray-500">Contracts Received</h4>
+                                    <p class="text-4xl font-bold text-gray-800" id="contract-status-count">0/0</p>
+                                    <button class="btn btn-secondary text-sm mt-4 px-3 py-1" data-status-type="isContractSigned">Review</button>
+                                </div>
+                                <div class="card p-4 text-center flex flex-col justify-between shadow-md">
+                                    <h4 class="font-medium text-gray-500">Logos Received</h4>
+                                    <p class="text-4xl font-bold text-gray-800" id="logo-status-count">0/0</p>
+                                    <button class="btn btn-secondary text-sm mt-4 px-3 py-1" data-status-type="isLogoReceived">Review</button>
+                                </div>
+                                <div class="card p-4 text-center flex flex-col justify-between shadow-md">
+                                    <h4 class="font-medium text-gray-500">Banners Received</h4>
+                                    <p class="text-4xl font-bold text-gray-800" id="banner-status-count">0/0</p>
+                                    <button class="btn btn-secondary text-sm mt-4 px-3 py-1" data-status-type="isBannerPlaced">Review</button>
+                                </div>
+                                <div class="card p-4 text-center flex flex-col justify-between shadow-md">
+                                    <h4 class="font-medium text-gray-500">Payments Received</h4>
+                                    <p class="text-4xl font-bold text-gray-800" id="payment-status-count">0/0</p>
+                                    <button class="btn btn-secondary text-sm mt-4 px-3 py-1" data-status-type="isPaymentReceived">Review</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calendar Widget -->
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <button id="prev-month-btn" class="btn btn-secondary px-3 py-1 shadow-md hover:shadow-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+                                </button>
+                                <h3 id="current-month" class="text-2xl font-bold text-gray-700"></h3>
+                                <button id="next-month-btn" class="btn btn-secondary px-3 py-1 shadow-md hover:shadow-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10l-3.938-3.71a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+                                </button>
+                            </div>
+                            <div class="calendar-grid mb-6">
+                                <div class="calendar-day-header">Sun</div>
+                                <div class="calendar-day-header">Mon</div>
+                                <div class="calendar-day-header">Tue</div>
+                                <div class="calendar-day-header">Wed</div>
+                                <div class="calendar-day-header">Thu</div>
+                                <div class="calendar-day-header">Fri</div>
+                                <div class="calendar-day-header">Sat</div>
+                            </div>
+                            <div id="calendar-body" class="calendar-grid"></div>
+                        </div>
+                        
+                        ---
+                        
+                        <!-- Task Section -->
+                        <div class="mt-8">
+                            <h3 class="text-3xl font-bold mb-4 text-gray-800">My Tasks</h3>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                                <div id="task-form-container" class="card p-6 shadow-md">
+                                    <form id="task-form" class="space-y-4">
+                                        <input type="hidden" id="task-id">
+                                        <div>
+                                            <label for="task-name" class="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
+                                            <input type="text" id="task-name" required class="w-full">
+                                        </div>
+                                        <div>
+                                            <label for="task-notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                            <textarea id="task-notes" rows="2" class="w-full"></textarea>
+                                        </div>
+                                        <div>
+                                            <label for="task-due-date" class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                                            <input type="date" id="task-due-date" class="w-full">
+                                        </div>
+                                        <div class="flex justify-between space-x-4">
+                                            <button type="submit" class="btn btn-primary flex-1 shadow-md hover:shadow-lg" id="task-submit-btn">Add Task</button>
+                                            <button type="button" id="task-cancel-btn" class="btn btn-secondary flex-1 hidden shadow-md hover:shadow-lg">Cancel Edit</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div id="task-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+                                    <!-- Tasks will be dynamically added here -->
+                                    <div class="flex justify-center items-center h-24 text-gray-500" id="task-loading-spinner">
+                                        <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- New Yearly Tracking Section -->
+                <div id="yearly-tracking-section" class="hidden">
+                    <div class="card p-6">
+                        <h2 class="text-3xl font-bold mb-4 text-gray-800">Yearly Tracking</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                            <div class="card p-6 shadow-md">
+                                <h3 class="text-2xl font-bold text-gray-800 mb-4">Total Financials</h3>
+                                <div class="flex items-center space-x-4 mb-4">
+                                    <span class="font-medium text-gray-500">Select Year:</span>
+                                    <select id="yearly-tracking-contribution-year" class="px-2 py-1 rounded-md border border-gray-300"></select>
+                                </div>
+                                <p class="text-4xl font-bold text-gray-800 mb-4" id="yearly-tracking-yearly-contributions">$0.00</p>
+                                <div class="chart-container h-48">
+                                     <canvas id="yearly-tracking-contribution-graph"></canvas>
+                                </div>
+                            </div>
+                             <div class="card p-6 shadow-md">
+                                <h3 class="text-2xl font-bold text-gray-800 mb-4">Total Tickets</h3>
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-gray-500">Total GA Tickets</span>
+                                        <span class="text-3xl font-bold text-gray-800" id="total-ga-tickets">0</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-gray-500">Total VIP Tickets</span>
+                                        <span class="text-3xl font-bold text-gray-800" id="total-vip-tickets">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="card p-6 shadow-md">
+                                <h3 class="text-2xl font-bold mb-4 text-gray-800">Yearly Attendance</h3>
+                                <div class="chart-container h-64">
+                                    <canvas id="attendance-graph"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                         <div class="mt-8">
+                            <h3 class="text-2xl font-bold mb-4 text-gray-700">Individual Sponsor Contributions</h3>
+                            <div id="sponsor-contributions-list" class="space-y-4">
+                                <div class="flex justify-center items-center h-24 text-gray-500" id="sponsor-breakdown-loading">
+                                    <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Yearly Attendance Section -->
+                        <div class="mt-8">
+                            <h3 class="text-2xl font-bold mb-4 text-gray-700">Yearly Attendance</h3>
+                            <div class="flex flex-col lg:flex-row gap-8">
+                                <div class="w-full lg:w-1/2">
+                                    
+                                </div>
+                                <div class="w-full lg:w-1/2">
+                                    <div class="card p-4 shadow-md">
+                                        <h4 class="text-lg font-bold mb-2">Add/Edit Yearly Attendance</h4>
+                                        <form id="attendance-form" class="space-y-4">
+                                            <div class="flex flex-col">
+                                                <label for="attendance-year" class="font-medium text-gray-700">Year</label>
+                                                <input type="number" id="attendance-year" class="w-full mt-1" min="1900" max="2100" value="${new Date().getFullYear()}">
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <label for="attendance-count" class="font-medium text-gray-700">Total Attendance</label>
+                                                <input type="number" id="attendance-count" class="w-full mt-1" min="0" value="0">
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-full shadow-md hover:shadow-lg">Save Attendance</button>
+                                        </form>
+                                    </div>
+                                    <div class="mt-4 card p-4 shadow-md">
+                                        <h4 class="text-lg font-bold mb-2">Attendance History</h4>
+                                        <div id="attendance-history" class="space-y-2">
+                                            <div id="attendance-loading-spinner" class="flex justify-center items-center">
+                                                <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notes Section -->
+                <div id="notes-section" class="hidden">
+                    <div class="card p-6">
+                        <h2 class="text-3xl font-bold mb-4 text-gray-800">My Notes</h2>
+                        <div class="flex justify-end mb-4">
+                            <button id="add-note-btn" class="btn btn-primary shadow-md hover:shadow-lg">Add Note</button>
+                        </div>
+                        <div id="notes-list" class="space-y-4">
+                            <div class="flex justify-center items-center h-24 text-gray-500" id="notes-loading-spinner">
+                                <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assets Section -->
+                <div id="assets-section" class="hidden">
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-3xl font-bold text-gray-800">My Assets</h2>
+                            <button id="add-asset-btn" class="bg-blue-600 text-white p-3 rounded-full shadow-md hover:bg-blue-700 transition-colors duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                                    <path fill-rule="evenodd" d="M12 3.75a.75.75 0 01.75.75v6.75h6.75a.75.75 0 010 1.5h-6.75v6.75a.75.75 0 01-1.5 0v-6.75H3.75a.75.75 0 010-1.5h6.75V4.5a.75.75 0 01.75-.75z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="assets-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="flex justify-center items-center h-24 text-gray-500" id="assets-loading-spinner">
+                                <svg class="animate-spin h-8 w-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Profile Section -->
+                <div id="profile-section" class="hidden">
+                    <div class="card p-6">
+                        <h2 class="text-3xl font-bold mb-4 text-gray-800">My Profile</h2>
+                        <form id="profile-form" class="space-y-4">
+                            <div class="flex flex-col">
+                                <label for="profile-name" class="font-medium text-gray-700">Name</label>
+                                <input type="text" id="profile-name" class="w-full mt-1" placeholder="Your Name">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="profile-email" class="font-medium text-gray-700">Email</label>
+                                <input type="email" id="profile-email" class="w-full mt-1" placeholder="your@email.com">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="profile-bio" class="font-medium text-gray-700">Bio</label>
+                                <textarea id="profile-bio" class="w-full mt-1" rows="4" placeholder="Tell us about yourself..."></textarea>
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="profile-id" class="font-medium text-gray-700">User ID</label>
+                                <input type="text" id="profile-id" class="w-full mt-1 text-gray-500 bg-gray-100" readonly>
+                            </div>
+                            <div class="flex space-x-4">
+                                <button type="submit" class="btn btn-primary flex-1 shadow-md hover:shadow-lg" id="profile-save-btn">Save Profile</button>
+                                <button type="button" id="sign-out-btn" class="btn btn-secondary flex-1 shadow-md hover:shadow-lg">Sign Out</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Deletion Confirmation Modal -->
+        <div id="delete-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden justify-center items-center p-4 modal">
+            <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-sm">
+                <p class="text-lg font-semibold mb-4 text-center" id="delete-modal-text">Are you sure you want to delete this item?</p>
+                <div class="flex justify-center space-x-4">
+                    <button id="confirm-delete-btn" class="btn bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg">Delete</button>
+                    <button id="cancel-delete-btn" class="btn btn-secondary shadow-md hover:shadow-lg">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Modal -->
+        <div id="event-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden justify-center items-center p-4 modal">
+            <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-lg">
+                <h3 id="event-modal-title" class="text-2xl font-bold mb-4 text-gray-800">Add New Event</h3>
+                <form id="event-form" class="space-y-4">
+                    <input type="hidden" id="event-id">
+                    <div>
+                        <label for="event-date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <input type="date" id="event-date" required class="w-full">
+                    </div>
+                    <div>
+                        <label for="event-time" class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                        <input type="time" id="event-time" class="w-full">
+                    </div>
+                    <div>
+                        <label for="event-name" class="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
+                        <input type="text" id="event-name" required class="w-full">
+                    </div>
+                    <div>
+                        <label for="event-notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="event-notes" rows="4" class="w-full"></textarea>
+                    </div>
+                    <div class="flex justify-between space-x-4">
+                        <button type="submit" class="btn btn-primary flex-1 shadow-md hover:shadow-lg" id="event-submit-btn">Save Event</button>
+                        <button type="button" id="event-delete-btn" class="btn bg-red-500 text-white flex-1 hover:bg-red-600 hidden shadow-md hover:shadow-lg" data-type="event">Delete Event</button>
+                        <button type="button" id="event-cancel-btn" class="btn btn-secondary flex-1 shadow-md hover:shadow-lg">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Note Modal -->
+        <div id="note-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden justify-center items-center p-4 modal">
+            <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-lg">
+                <h3 id="note-modal-title" class="text-2xl font-bold mb-4 text-gray-800">Add New Note</h3>
+                <form id="note-form" class="space-y-4">
+                    <input type="hidden" id="note-id">
+                    <div>
+                        <label for="note-title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <input type="text" id="note-title" required class="w-full">
+                    </div>
+                    <div>
+                        <label for="note-content" class="block text-sm font-medium text-gray-700 mb-1">Note</label>
+                        <textarea id="note-content" rows="6" class="w-full" required></textarea>
+                    </div>
+                    <div>
+                        <label for="note-sponsor-id" class="block text-sm font-medium text-gray-700 mb-1">Attach to Sponsor (optional)</label>
+                        <select id="note-sponsor-id" class="w-full">
+                            <option value="">No Sponsor</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end space-x-4">
+                        <button type="submit" class="btn btn-primary flex-1 shadow-md hover:shadow-lg" id="note-submit-btn">Save Note</button>
+                        <button type="button" id="note-cancel-btn" class="btn btn-secondary flex-1 shadow-md hover:shadow-lg">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Status Modal -->
+        <div id="status-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden justify-center items-center p-4 modal">
+            <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="status-modal-title" class="text-2xl font-bold text-gray-800">Review Status</h3>
+                    <button id="close-status-modal-btn" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="status-modal-list" class="space-y-4 max-h-96 overflow-y-auto">
+                    <!-- Dynamic sponsor list will be added here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sponsor Detail Modal -->
+        <div id="sponsor-detail-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden justify-center items-center p-4 modal">
+            <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-2xl overflow-y-auto max-h-[90vh]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="sponsor-detail-title" class="text-2xl font-bold text-gray-800">Sponsor Details</h3>
+                    <button id="close-sponsor-detail-btn" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-700 mb-2">General Information</h4>
+                        <p class="text-gray-600"><strong class="font-semibold">Company:</strong> <span id="detail-company-name"></span></p>
+                        <p class="text-gray-600"><strong class="font-semibold">Contact:</strong> <span id="detail-contact-name"></span></p>
+                        <p class="text-gray-600"><strong class="font-semibold">Email:</strong> <span id="detail-contact-email"></span></p>
+                        <p class="text-gray-600"><strong class="font-semibold">Phone:</strong> <span id="detail-contact-phone"></span></p>
+                        <p class="text-gray-600"><strong class="font-semibold">Type:</strong> <span id="detail-sponsor-type"></span></p>
+                        <p class="text-gray-600"><strong class="font-semibold">Amount:</strong> <span id="detail-sponsor-amount"></span></p>
+                        <p class="text-gray-600"><strong class="font-semibold">Status:</strong> <span id="detail-sponsor-status"></span></p>
+                    </div>
+
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-700 mb-2">Deliverables & Tasks</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="font-semibold text-gray-800">Items Received</h5>
+                                <ul class="space-y-1 mt-2 text-gray-600">
+                                    <li><span id="detail-contract-status"></span> Contract</li>
+                                    <li><span id="detail-logo-status"></span> Logo</li>
+                                    <li><span id="detail-banner-status"></span> Banner</li>
+                                    <li><span id="detail-payment-status"></span> Payment</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold text-gray-800">Sponsor Tasks</h5>
+                                <ul class="space-y-1 mt-2 text-gray-600" id="detail-tasks-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-700 mb-2">Ticket Allotment</h4>
+                        <ul class="space-y-1 text-gray-600" id="detail-tickets-list">
+                            <!-- Tickets will be dynamically added here -->
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-700 mb-2">Notes</h4>
+                        <p class="text-gray-600 italic" id="detail-sponsor-notes"></p>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button id="edit-sponsor-detail-btn" class="btn btn-secondary shadow-md hover:shadow-lg">Edit</button>
+                    <button id="delete-sponsor-detail-btn" class="btn bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg">Delete</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add/Edit Sponsor Modal -->
+        <div id="add-edit-sponsor-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden justify-center items-center p-4 modal">
+             <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-lg overflow-y-auto max-h-[90vh]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="form-title" class="text-2xl font-bold text-gray-800">Add New Sponsor</h3>
+                    <button id="close-add-edit-sponsor-modal-btn" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form id="sponsor-form" class="space-y-4">
+                    <input type="hidden" id="sponsor-id">
+                    <div>
+                        <label for="sponsor-year" class="block text-sm font-medium text-gray-700 mb-1">Sponsor Year</label>
+                        <select id="sponsor-year" required class="w-full"></select>
+                    </div>
+                    <div>
+                        <label for="sponsor-name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                        <input type="text" id="sponsor-name" required class="w-full">
+                    </div>
+                    <div>
+                        <label for="sponsor-company" class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                        <input type="text" id="sponsor-company" class="w-full">
+                    </div>
+                    <div>
+                        <label for="sponsor-contact" class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                        <input type="email" id="sponsor-contact" required class="w-full">
+                    </div>
+                    <div>
+                        <label for="sponsor-phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input type="tel" id="sponsor-phone" class="w-full">
+                    </div>
+                    <div>
+                        <label for="sponsor-type" class="block text-sm font-medium text-gray-700 mb-1">Sponsor Type</label>
+                        <select id="sponsor-type" required class="w-full">
+                            <option value="">Select a type</option>
+                            <option value="Presenting">Presenting</option>
+                            <option value="Associate">Associate</option>
+                            <option value="Supporting">Supporting</option>
+                            <option value="Contributing">Contributing</option>
+                            <option value="Friends of Fair">Friends of Fair</option>
+                            <option value="Media Sponsors">Media Sponsors</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sponsor-amount" class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                        <input type="number" id="sponsor-amount" required class="w-full" step="0.01">
+                    </div>
+                    <div>
+                        <label for="sponsor-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="sponsor-status" required class="w-full">
+                            <option value="Active">Active</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+
+                    <!-- New Status Checklist Section -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Items Received</label>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="contract-status">
+                                Contract
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="logo-status">
+                                Logo
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="banner-status">
+                                Banner
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="payment-status">
+                                Payment
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- New Sponsor Task Checklist -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sponsor Tasks</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="task-follow-up">
+                                Follow Up
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="task-meet">
+                                Meet with Them
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="task-send-invite">
+                                Send Event Invite
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="task-waiting-rsvp">
+                                Waiting for RSVP
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="task-confirmed-rsvp">
+                                Confirmed RSVP
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="task-end-wrap-up">
+                                End of the Year Wrap Up
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="task-email-them">
+                                Email Them
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Ticket Allotment Section -->
+                    <div>
+                        <h3 class="text-xl font-bold mb-2 mt-4 text-gray-700">Ticket Allotment</h3>
+                        <div class="space-y-3">
+                            <!-- Wednesday -->
+                            <div class="flex items-center space-x-4">
+                                <label class="w-20 text-sm font-medium text-gray-700">Wed</label>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-ga-wed">GA:</label>
+                                    <input type="number" id="tickets-ga-wed" class="flex-1" value="0" min="0">
+                                </div>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-vip-wed">VIP:</label>
+                                    <input type="number" id="tickets-vip-wed" class="flex-1" value="0" min="0">
+                                </div>
+                            </div>
+                            <!-- Thursday -->
+                            <div class="flex items-center space-x-4">
+                                <label class="w-20 text-sm font-medium text-gray-700">Thu</label>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-ga-thu">GA:</label>
+                                    <input type="number" id="tickets-ga-thu" class="flex-1" value="0" min="0">
+                                </div>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-vip-thu">VIP:</label>
+                                    <input type="number" id="tickets-vip-thu" class="flex-1" value="0" min="0">
+                                </div>
+                            </div>
+                            <!-- Friday -->
+                            <div class="flex items-center space-x-4">
+                                <label class="w-20 text-sm font-medium text-gray-700">Fri</label>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-ga-fri">GA:</label>
+                                    <input type="number" id="tickets-ga-fri" class="flex-1" value="0" min="0">
+                                </div>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-vip-fri">VIP:</label>
+                                    <input type="number" id="tickets-vip-fri" class="flex-1" value="0" min="0">
+                                </div>
+                            </div>
+                            <!-- Saturday -->
+                            <div class="flex items-center space-x-4">
+                                <label class="w-20 text-sm font-medium text-gray-700">Sat</label>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-ga-sat">GA:</label>
+                                    <input type="number" id="tickets-ga-sat" class="flex-1" value="0" min="0">
+                                </div>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-vip-sat">VIP:</label>
+                                    <input type="number" id="tickets-vip-sat" class="flex-1" value="0" min="0">
+                                </div>
+                            </div>
+                            <!-- Sunday -->
+                            <div class="flex items-center space-x-4">
+                                <label class="w-20 text-sm font-medium text-gray-700">Sun</label>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-ga-sun">GA:</label>
+                                    <input type="number" id="tickets-ga-sun" class="flex-1" value="0" min="0">
+                                </div>
+                                <div class="flex-1 flex items-center space-x-2">
+                                    <label for="tickets-vip-sun">VIP:</label>
+                                    <input type="number" id="tickets-vip-sun" class="flex-1" value="0" min="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="sponsor-notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="sponsor-notes" rows="4" class="w-full"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full shadow-md hover:shadow-lg" id="submit-btn">Add Sponsor</button>
+                    <button type="button" id="cancel-edit-btn" class="btn btn-secondary w-full hidden shadow-md hover:shadow-lg">Cancel Edit</button>
+                </form>
+             </div>
+        </div>
+
+        <!-- Add/Edit Asset Modal -->
+        <div id="add-edit-asset-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden justify-center items-center p-4 modal">
+            <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-lg overflow-y-auto max-h-[90vh]">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="asset-form-title" class="text-2xl font-bold text-gray-800">Add New Asset</h3>
+                    <button id="close-add-edit-asset-modal-btn" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <form id="asset-form" class="space-y-4">
+                    <input type="hidden" id="asset-id">
+                    <div>
+                        <label for="asset-name" class="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
+                        <input type="text" id="asset-name" required class="w-full">
+                    </div>
+                    <div>
+                        <label for="asset-description" class="block text-sm font-medium text-gray-700 mb-1">Description/Details</label>
+                        <textarea id="asset-description" rows="4" class="w-full" required></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="asset-amount" class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                            <input type="number" id="asset-amount" class="w-full" value="0" min="0">
+                        </div>
+                        <div>
+                            <label for="asset-price" class="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                            <input type="number" id="asset-price" class="w-full" value="0" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="asset-sponsor-id" class="block text-sm font-medium text-gray-700 mb-1">Attach to Sponsor (optional)</label>
+                        <select id="asset-sponsor-id" class="w-full">
+                            <option value="">No Sponsor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="asset-available" class="checkbox-label">
+                            <input type="checkbox" id="asset-available" class="h-6 w-6 text-blue-600 rounded">
+                            Available to Market
+                        </label>
+                    </div>
+                    <div class="flex justify-between space-x-4">
+                        <button type="submit" class="btn btn-primary flex-1 shadow-md hover:shadow-lg" id="asset-submit-btn">Save Asset</button>
+                        <button type="button" id="asset-cancel-btn" class="btn btn-secondary flex-1 shadow-md hover:shadow-lg">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        
+        // --- GLOBAL/ENVIRONMENT VARIABLES (Simulated for Demo Mode) ---
+        // These variables are typically injected by a deployment environment (like Firebase Hosting)
+        // or a build process, but we are setting safe defaults for standalone operation.
+        const firebaseConfig = { apiKey: "AIzaSyCm64TEmHfmmNg7oMhSUdyEjDSr8WiK1ew", authDomain: "sponsorhub-e7e1f.firebaseapp.com", projectId: "sponsorhub-e7e1f", storageBucket: "sponsorhub-e7e1f.firebasestorage.app", messagingSenderId: "161869710818", appId: "1:161869710818:web:363dd2544ad4a96ffba5bb", measurementId: "G-1ZDRHLEEH1" };
+        const __initial_auth_token = null;
+        const __app_id = 'demo-app-id'; // Hardcoded unique ID for demo artifact isolation
+        
+        // Dummy implementations for necessary Firebase objects
+        const app = { name: 'demo-app' };
+        const db = {}; // Mock database
+        const auth = {
+            currentUser: { uid: 'demo-user-id' },
+            onAuthStateChanged: (app, callback) => {
+                // Simulate successful immediate auth state change
+                setTimeout(() => callback({ uid: 'demo-user-id' }), 0);
+                return () => {}; // Mock unsubscribe
+            },
+            signInAnonymously: () => Promise.resolve({ user: { uid: 'demo-user-id' } }),
+            signInWithCustomToken: () => Promise.resolve({ user: { uid: 'demo-user-id' } }),
+            signOut: () => {
+                alert('Sign out attempted. This is a demo; full sign-out requires Firebase Auth.');
+                return Promise.resolve();
+            }
+        }; 
+
+        // Mock Firestore functions for local simulation
+        function collection(db, path) { return { path }; }
+        function doc(db, path, id) { return { path, id }; }
+        function onSnapshot(ref, callback) { 
+            // We simulate data updates here by calling the callback immediately.
+            // This is the core data update loop when Firebase is not running.
+            const simulateSnapshot = () => {
+                const snapshot = {
+                    forEach: (cb) => {
+                        let dataArray;
+                        switch (ref.path.split('/').pop()) {
+                            case 'sponsors':
+                                dataArray = simulatedSponsors;
+                                break;
+                            case 'events':
+                                dataArray = simulatedEvents;
+                                break;
+                            case 'tasks':
+                                dataArray = simulatedTasks.filter(t => !t.isCompleted);
+                                break;
+                            case 'notes':
+                                dataArray = simulatedNotes;
+                                break;
+                            case 'assets':
+                                dataArray = simulatedAssets;
+                                break;
+                            case 'yearlyAttendance':
+                                dataArray = Object.keys(simulatedYearlyAttendance).map(year => ({ id: year, count: simulatedYearlyAttendance[year] }));
+                                break;
+                            default:
+                                return [];
+                        }
+                        dataArray.forEach(item => cb({ id: item.id, data: () => item }));
+                    },
+                    size: simulatedSponsors.length,
+                };
+                callback(snapshot);
+            };
+            simulateSnapshot();
+            return () => {}; // Mock unsubscribe
+        }
+
+        // Mock Write operations (for simulated data updates)
+        async function addDoc(collectionName, data) {
+            const newItem = { id: crypto.randomUUID(), ...data };
+            switch (collectionName) {
+                case 'sponsors':
+                    simulatedSponsors.push(newItem);
+                    break;
+                case 'events':
+                    simulatedEvents.push(newItem);
+                    break;
+                case 'tasks':
+                    simulatedTasks.push(newItem);
+                    break;
+                case 'notes':
+                    simulatedNotes.push(newItem);
+                    break;
+                case 'assets':
+                    simulatedAssets.push(newItem);
+                    break;
+            }
+            // Manually re-render all data containers to simulate real-time update
+            renderAllData();
+            return { id: newItem.id };
+        }
+
+        async function setDoc(collectionName, id, data, options) {
+            let array;
+            let targetCollection = collectionName.split('/').pop();
+            
+            switch (targetCollection) {
+                case 'sponsors':
+                    array = simulatedSponsors;
+                    break;
+                case 'events':
+                    array = simulatedEvents;
+                    break;
+                case 'tasks':
+                    array = simulatedTasks;
+                    break;
+                case 'notes':
+                    array = simulatedNotes;
+                    break;
+                case 'assets':
+                    array = simulatedAssets;
+                    break;
+            }
+            
+            if (collectionName.includes('yearlyAttendance')) {
+                 simulatedYearlyAttendance[id] = data.count;
+            } else {
+                const index = array.findIndex(item => item.id === id);
+                if (index !== -1) {
+                    array[index] = { ...array[index], ...data };
+                }
+            }
+            renderAllData();
+        }
+
+        async function deleteDoc(collectionName, id) {
+            let array;
+            let targetCollection = collectionName.split('/').pop();
+
+            switch (targetCollection) {
+                case 'sponsors':
+                    simulatedSponsors.length = 0; simulatedSponsors.push(...simulatedSponsors.filter(item => item.id !== id));
+                    break;
+                case 'events':
+                    simulatedEvents.length = 0; simulatedEvents.push(...simulatedEvents.filter(item => item.id !== id));
+                    break;
+                case 'tasks':
+                    simulatedTasks.length = 0; simulatedTasks.push(...simulatedTasks.filter(item => item.id !== id));
+                    break;
+                case 'notes':
+                    simulatedNotes.length = 0; simulatedNotes.push(...simulatedNotes.filter(item => item.id !== id));
+                    break;
+                case 'assets':
+                    simulatedAssets.length = 0; simulatedAssets.push(...simulatedAssets.filter(item => item.id !== id));
+                    break;
+                case 'yearlyAttendance':
+                    delete simulatedYearlyAttendance[id];
+                    break;
+            }
+            renderAllData();
+        }
+        
+        async function getDoc(collectionName, id) {
+            let data = null;
+            let targetCollection = collectionName.split('/').pop();
+            
+            switch (targetCollection) {
+                case 'sponsors':
+                    data = simulatedSponsors.find(s => s.id === id);
+                    break;
+                case 'events':
+                    data = simulatedEvents.find(e => e.id === id);
+                    break;
+                case 'tasks':
+                    data = simulatedTasks.find(t => t.id === id);
+                    break;
+                case 'notes':
+                    data = simulatedNotes.find(n => n.id === id);
+                    break;
+                case 'assets':
+                    data = simulatedAssets.find(a => a.id === id);
+                    break;
+                case 'profile':
+                    data = simulatedProfile;
+                    break;
+            }
+            return {
+                exists: () => !!data,
+                data: () => data,
+                id: id
+            };
+        }
+
+        function renderAllData() {
+            renderSponsors();
+            renderSponsorStatus(simulatedSponsors);
+            renderYearlyTotals(simulatedSponsors);
+            renderSponsorContributions(simulatedSponsors);
+            renderContacts();
+            renderDashboardSummary(simulatedSponsors);
+            renderAssets();
+            populateSponsorDropdown();
+            populateYearSelects();
+        }
+
+        function setupRealtimeListeners() {
+            // Since we removed Firebase, we just run an initial render
+            renderAllData();
+        }
+
+        function populateSponsorDropdown() {
+            const selectElement = document.getElementById('note-sponsor-id');
+            if (!selectElement) return;
+            selectElement.innerHTML = `<option value="">No Sponsor</option>`;
+            sponsorsData.forEach(sponsor => {
+                const option = document.createElement('option');
+                option.value = sponsor.id;
+                option.textContent = sponsor.company || sponsor.name;
+                selectElement.appendChild(option);
+            });
+        }
+        
+        function populateAssetSponsorDropdown(selectElement, selectedSponsorId = null) {
+            if (!selectElement) return;
+            selectElement.innerHTML = `<option value="">No Sponsor</option>`;
+            simulatedSponsors.forEach(sponsor => {
+                const option = document.createElement('option');
+                option.value = sponsor.id;
+                option.textContent = sponsor.company || sponsor.name;
+                if (selectedSponsorId === sponsor.id) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        }
+        
+        function populateYearSelects() {
+            const currentYear = new Date().getFullYear();
+            const startYear = currentYear - 5;
+            const endYear = currentYear + 5;
+
+            const selects = [dashboardYearSelect, yearlyTrackingContributionYearSelect];
+
+            selects.forEach(select => {
+                if (select) {
+                    select.innerHTML = '';
+                    for (let i = endYear; i >= startYear; i--) {
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = i;
+                        if (i === currentYear) {
+                            option.selected = true;
+                        }
+                        select.appendChild(option);
+                    }
+                }
+            });
+            dashboardYear = dashboardYearSelect.value || currentYear.toString();
+
+            const sponsorYearSelect = document.getElementById('sponsor-year');
+            if (sponsorYearSelect) {
+                 sponsorYearSelect.innerHTML = '';
+                 for (let i = endYear; i >= startYear; i--) {
+                     const option = document.createElement('option');
+                     option.value = i;
+                     option.textContent = i;
+                     if (i === currentYear) {
+                         option.selected = true;
+                     }
+                     sponsorYearSelect.appendChild(option);
+                 }
+            }
+        }
+
+        // --- Render UI (Updated for Demo Mode) ---
+        function renderSponsors() {
+            const searchTerm = sponsorSearchInput.value.toLowerCase();
+            const sortBy = sponsorSortSelect.value;
+            const filterType = sponsorFilterSelect.value;
+            
+            let filteredSponsors = [...simulatedSponsors];
+
+            if (searchTerm) {
+                filteredSponsors = filteredSponsors.filter(sponsor => 
+                    (sponsor.name && sponsor.name.toLowerCase().includes(searchTerm)) ||
+                    (sponsor.company && sponsor.company.toLowerCase().includes(searchTerm)) ||
+                    (sponsor.contact && sponsor.contact.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            if (filterType !== 'all') {
+                filteredSponsors = filteredSponsors.filter(s => s.type === filterType);
+            }
+
+            filteredSponsors.sort((a, b) => {
+                switch (sortBy) {
+                    case 'amount-desc':
+                        return (b.amount || 0) - (a.amount || 0);
+                    case 'amount-asc':
+                        return (a.amount || 0) - (b.amount || 0);
+                    case 'date-desc':
+                        return new Date(b.date) - new Date(a.date);
+                    case 'date-asc':
+                        return new Date(a.date) - new Date(b.date);
+                    case 'name':
+                    default:
+                        return (a.company || a.name).localeCompare(b.company || b.name);
+                }
+            });
+            
+            displayedSponsors = filteredSponsors;
+
+            sponsorList.innerHTML = '';
+            loadingSpinner.classList.add('hidden');
+
+            if (filteredSponsors.length === 0) {
+                sponsorList.innerHTML = '<p class="text-center text-gray-500">No sponsors match your criteria. Try adjusting your search or filters.</p>';
+                return;
+            }
+
+            filteredSponsors.forEach(sponsor => {
+                const sponsorEl = document.createElement('div');
+                sponsorEl.className = 'card p-4 flex flex-col cursor-pointer hover:bg-gray-50 transition-colors duration-200 shadow-md';
+                sponsorEl.dataset.id = sponsor.id;
+                
+                const tasks = sponsor.sponsorTasks || {};
+                const allTasksCompleted = Object.values(tasks).every(status => status);
+                const taskStatusIndicator = `<span class="h-3 w-3 rounded-full ${allTasksCompleted ? 'bg-green-500' : 'bg-red-500'} ml-2"></span>`;
+                
+                const companyTitle = sponsor.company || sponsor.name;
+                const contactName = sponsor.company ? sponsor.name : '';
+
+                sponsorEl.innerHTML = `
+                    <div class="flex items-center mb-2">
+                        <h4 class="text-lg font-bold text-gray-800">${companyTitle}</h4>
+                        ${taskStatusIndicator}
+                    </div>
+                    ${contactName ? `<p class="text-sm text-gray-600">${contactName}</p>` : ''}
+                    <p class="text-lg font-bold text-gray-800 mt-2">$${(sponsor.amount || 0).toFixed(2)}</p>
+                    <p class="text-sm font-semibold mt-1">Status: <span class="rounded-full px-2 py-1 text-xs font-bold ${
+                        sponsor.status === 'Active' ? 'bg-green-100 text-green-800' :
+                        sponsor.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                    }">${sponsor.status}</span></p>
+                `;
+                sponsorList.appendChild(sponsorEl);
+            });
+             document.querySelectorAll('#sponsor-list .card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const sponsorId = e.currentTarget.dataset.id;
+                    const sponsor = simulatedSponsors.find(s => s.id === sponsorId);
+                    if (sponsor) {
+                        showSponsorDetailModal(sponsor);
+                    }
+                });
+            });
+        }
+        
+        function renderContacts() {
+            contactList.innerHTML = '';
+            contactLoadingSpinner.classList.add('hidden');
+            const searchTerm = contactSearchInput.value.toLowerCase();
+            const filteredSponsors = simulatedSponsors.filter(sponsor => 
+                (sponsor.name && sponsor.name.toLowerCase().includes(searchTerm)) || 
+                (sponsor.company && sponsor.company.toLowerCase().includes(searchTerm)) ||
+                (sponsor.contact && sponsor.contact.toLowerCase().includes(searchTerm)) ||
+                (sponsor.phone && sponsor.phone.toLowerCase().includes(searchTerm))
+            );
+
+            if (filteredSponsors.length === 0) {
+                 contactList.innerHTML = '<p class="text-center text-gray-500">No contacts to display.</p>';
+                 return;
+            }
+
+            filteredSponsors.forEach(sponsor => {
+                const contactEl = document.createElement('div');
+                contactEl.className = 'p-4 card cursor-pointer hover:bg-gray-50 transition-colors duration-200 shadow-md hover:shadow-lg';
+                contactEl.dataset.id = sponsor.id;
+                
+                const companyTitle = sponsor.company || sponsor.name;
+                const companySubtitle = sponsor.company ? sponsor.name : '';
+
+                contactEl.innerHTML = `
+                    <div class="font-bold text-lg text-gray-800">${companyTitle}</div>
+                    ${companySubtitle ? `<p class="text-sm text-gray-600">${companySubtitle}</p>` : ''}
+                    <div class="text-sm text-gray-600">${sponsor.contact}</div>
+                    ${sponsor.phone ? `<p class="text-sm text-gray-600">${sponsor.phone}</p>` : ''}
+                `;
+                contactList.appendChild(contactEl);
+            });
+
+            document.querySelectorAll('#contacts-section .card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const sponsorId = e.currentTarget.dataset.id;
+                    const sponsor = simulatedSponsors.find(s => s.id === sponsorId);
+                    if (sponsor) {
+                        showSponsorDetailModal(sponsor);
+                    }
+                });
+            });
+        }
+        
+        function renderNotes() {
+            notesList.innerHTML = '';
+            notesLoadingSpinner.classList.add('hidden');
+            if (simulatedNotes.length === 0) {
+                 notesList.innerHTML = '<p class="text-center text-gray-500">No notes to display. Click "Add Note" to get started!</p>';
+                 return;
+            }
+
+            simulatedNotes.forEach(note => {
+                const sponsor = simulatedSponsors.find(s => s.id === note.sponsorId);
+                const sponsorName = sponsor ? sponsor.company || sponsor.name : 'No Sponsor';
+                const noteEl = document.createElement('div');
+                noteEl.className = 'card p-4 shadow-md flex flex-col cursor-pointer hover:bg-gray-50 transition-colors duration-200';
+                noteEl.dataset.id = note.id;
+                noteEl.innerHTML = `
+                    <div class="font-bold text-lg text-gray-800">${note.title}</div>
+                    <div class="text-sm text-gray-600">Attached to: ${sponsorName}</div>
+                    <div class="text-sm text-gray-500 mt-2">${note.content.substring(0, 100)}...</div>
+                    <div class="flex space-x-2 mt-4 self-end">
+                        <button class="btn btn-secondary text-sm px-3 py-1 note-edit-btn" data-id="${note.id}">Edit</button>
+                        <button class="btn bg-red-500 text-white text-sm px-3 py-1 delete-btn" data-id="${note.id}" data-type="note">Delete</button>
+                    </div>
+                `;
+                notesList.appendChild(noteEl);
+            });
+            
+            document.querySelectorAll('.note-edit-btn').forEach(btn => btn.addEventListener('click', handleNoteEdit));
+            document.querySelectorAll('.delete-btn[data-type="note"]').forEach(btn => btn.addEventListener('click', handleDeleteClick));
+        }
+
+        function renderAssets() {
+            assetsList.innerHTML = '';
+            assetsLoadingSpinner.classList.add('hidden');
+            if (simulatedAssets.length === 0) {
+                assetsList.innerHTML = '<p class="text-center text-gray-500">No assets added yet. Click the "+" button to get started!</p>';
+                return;
+            }
+
+            simulatedAssets.forEach(asset => {
+                const isAvailable = asset.isAvailable;
+                const statusIndicator = `<span class="h-3 w-3 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'} absolute top-2 right-2"></span>`;
+                
+                const sponsor = simulatedSponsors.find(s => s.id === asset.sponsorId);
+                const sponsorName = sponsor ? sponsor.company || sponsor.name : 'Not assigned';
+
+                const assetEl = document.createElement('div');
+                assetEl.className = 'card p-4 flex flex-col justify-between shadow-md hover:shadow-lg relative';
+                assetEl.dataset.id = asset.id;
+                assetEl.innerHTML = `
+                    ${statusIndicator}
+                    <div>
+                        <h4 class="font-bold text-lg text-gray-800">${asset.name}</h4>
+                        <p class="text-sm text-gray-600">${asset.description.substring(0, 50)}...</p>
+                        <p class="text-sm text-gray-600">Amount: ${asset.amount}</p>
+                        <p class="text-sm font-semibold text-gray-800 mt-2">Price: $${(asset.price || 0).toFixed(2)}</p>
+                        <p class="text-sm text-gray-600">Sponsor: ${sponsorName}</p>
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button class="btn btn-secondary text-sm px-3 py-1 asset-edit-btn flex-1" data-id="${asset.id}">Edit</button>
+                        <button class="btn bg-red-500 text-white text-sm px-3 py-1 delete-btn" data-id="${asset.id}" data-type="asset">Delete</button>
+                    </div>
+                `;
+                assetsList.appendChild(assetEl);
+            });
+
+            document.querySelectorAll('.asset-edit-btn').forEach(btn => btn.addEventListener('click', handleAssetEdit));
+            document.querySelectorAll('.delete-btn[data-type="asset"]').forEach(btn => btn.addEventListener('click', handleDeleteClick));
+        }
+
+        function renderSponsorStatus(sponsors) {
+            const totalSponsors = sponsors.length;
+            let contractsReceived = 0;
+            let logosReceived = 0;
+            let bannersReceived = 0;
+            let paymentsReceived = 0;
+
+            sponsors.forEach(sponsor => {
+                if (sponsor.isContractSigned) contractsReceived++;
+                if (sponsor.isLogoReceived) logosReceived++;
+                if (sponsor.isBannerPlaced) bannersReceived++;
+                if (sponsor.isPaymentReceived) paymentsReceived++;
+            });
+
+            contractStatusCountEl.textContent = `${contractsReceived}/${totalSponsors}`;
+            logoStatusCountEl.textContent = `${logosReceived}/${totalSponsors}`;
+            bannerStatusCountEl.textContent = `${bannersReceived}/${totalSponsors}`;
+            paymentStatusCountEl.textContent = `${paymentsReceived}/${totalSponsors}`;
+        }
+
+        function renderDashboardSummary(sponsors) {
+            const selectedYear = dashboardYear;
+            const yearlySponsors = sponsors.filter(s => s.sponsorYear === parseInt(selectedYear));
+            const totalSponsors = yearlySponsors.length;
+            
+            let totalAmount = 0;
+            let totalGA = 0;
+            let totalVIP = 0;
+            let contractsReceived = 0;
+            let logosReceived = 0;
+            let bannersReceived = 0;
+            let paymentsReceived = 0;
+
+            yearlySponsors.forEach(sponsor => {
+                if (sponsor.amount) {
+                    totalAmount += sponsor.amount;
+                }
+                
+                if (sponsor.tickets) {
+                    days.forEach(day => {
+                        const dayTickets = sponsor.tickets[day] || {};
+                        totalGA += dayTickets.general || 0;
+                        totalVIP += dayTickets.vip || 0;
+                    });
+                }
+
+                if (sponsor.isContractSigned) contractsReceived++;
+                if (sponsor.isLogoReceived) logosReceived++;
+                if (sponsor.isBannerPlaced) bannersReceived++;
+                if (sponsor.isPaymentReceived) paymentsReceived++;
+            });
+
+            dashboardTotalAmountEl.textContent = `$${totalAmount.toFixed(2)}`;
+            
+            const totalAssets = simulatedAssets.length;
+            const dashboardTotalAssetsEl = document.getElementById('dashboard-total-assets');
+            if (dashboardTotalAssetsEl) dashboardTotalAssetsEl.textContent = totalAssets;
+
+            dashboardTotalGATicketsEl.textContent = totalGA;
+            dashboardTotalVIPTicketsEl.textContent = totalVIP;
+            
+            const contractsPercent = totalSponsors > 0 ? (contractsReceived / totalSponsors) * 100 : 0;
+            const logosPercent = totalSponsors > 0 ? (logosReceived / totalSponsors) * 100 : 0;
+            const bannersPercent = totalSponsors > 0 ? (bannersReceived / totalSponsors) * 100 : 0;
+            const paymentsPercent = totalSponsors > 0 ? (paymentsReceived / totalSponsors) * 100 : 0;
+
+            renderProgressBar(dashboardContractStatusCountEl, contractProgressBar, contractsReceived, totalSponsors, contractsPercent);
+            renderProgressBar(dashboardLogoStatusCountEl, logoProgressBar, logosReceived, totalSponsors, logosPercent);
+            renderProgressBar(dashboardBannerStatusCountEl, bannerProgressBar, bannersReceived, totalSponsors, bannersPercent);
+            renderProgressBar(dashboardPaymentStatusCountEl, paymentProgressBar, paymentsReceived, totalSponsors, paymentsPercent);
+            
+            const upcomingEvents = simulatedEvents.filter(e => e.date && new Date(e.date) >= new Date() && new Date(e.date).getFullYear().toString() === selectedYear);
+            renderUpcomingEvents(upcomingEvents);
+            const overdueTasks = simulatedTasks.filter(t => t.dueDate && !t.isCompleted && new Date(t.dueDate) < new Date() && new Date(t.dueDate).getFullYear().toString() === selectedYear);
+            renderOverdueTasks(overdueTasks);
+        }
+
+        function renderProgressBar(labelEl, barEl, received, total, percent) {
+            if (labelEl) labelEl.textContent = `${received}/${total}`;
+            if (barEl) {
+                barEl.style.width = `${percent}%`;
+                barEl.classList.remove('bg-blue-600', 'bg-green-600');
+                if (percent >= 100) {
+                     barEl.classList.add('bg-green-600');
+                } else {
+                     barEl.classList.add('bg-blue-600');
+                }
+            }
+        }
+
+
+        function renderYearlyTotals(sponsors) {
+            let totalAmount = 0;
+            let totalGA = 0;
+            let totalVIP = 0;
+            
+            const contributionsByYear = {};
+
+            sponsors.forEach(sponsor => {
+                if (sponsor.amount) {
+                    const year = sponsor.sponsorYear;
+                    contributionsByYear[year] = (contributionsByYear[year] || 0) + sponsor.amount;
+                }
+                
+                if (sponsor.tickets) {
+                    days.forEach(day => {
+                        const dayTickets = sponsor.tickets[day] || {};
+                        totalGA += dayTickets.general || 0;
+                        totalVIP += dayTickets.vip || 0;
+                    });
+                }
+            });
+
+            if (totalAmountDisplay) totalAmountDisplay.textContent = `$${totalAmount.toFixed(2)}`;
+            if (totalGATickets) totalGATickets.textContent = totalGA;
+            if (totalVIPTickets) totalVIPTickets.textContent = totalVIP;
+            
+            renderYearlyTrackingContributions(contributionsByYear);
+            renderDashboardContributions(contributionsByYear);
+        }
+
+        function renderAttendance() {
+            const years = Object.keys(simulatedYearlyAttendance).sort();
+            const counts = years.map(year => simulatedYearlyAttendance[year]);
+            
+            drawAttendanceChart(years, counts);
+            renderAttendanceHistory(simulatedYearlyAttendance);
+        }
+        
+        function renderAttendanceHistory(data) {
+            attendanceHistoryList.innerHTML = '';
+            const sortedYears = Object.keys(data).sort().reverse();
+            
+            if (sortedYears.length === 0) {
+                 attendanceHistoryList.innerHTML = '<p class="text-center text-gray-500">No attendance data to display.</p>';
+                 return;
+            }
+
+            sortedYears.forEach((year, index) => {
+                const currentCount = data[year];
+                const prevYear = sortedYears[index + 1];
+                let diffHtml = '';
+
+                if (prevYear) {
+                    const prevCount = data[prevYear];
+                    const diff = currentCount - prevCount;
+                    const percentage = prevCount > 0 ? (diff / prevCount * 100).toFixed(1) : (diff > 0 ? 100 : 0);
+                    const icon = diff > 0 ? '▲' : (diff < 0 ? '▼' : '▬');
+                    const color = diff > 0 ? 'text-green-500' : (diff < 0 ? 'text-red-500' : 'text-gray-500');
+
+                    diffHtml = `
+                        <span class="text-sm font-semibold ml-4 ${color}">
+                            (${icon} ${Math.abs(diff).toLocaleString()} / ${percentage}%)
+                        </span>
+                    `;
+                }
+
+                const attendanceItem = document.createElement('div');
+                attendanceItem.className = 'flex justify-between items-center p-2 card shadow-md hover:shadow-lg';
+                attendanceItem.innerHTML = `
+                    <div class="flex-grow flex items-center space-x-2">
+                        <span class="font-medium text-gray-800">${year}</span>
+                        <span class="font-bold text-gray-700">${currentCount.toLocaleString()}</span>
+                        ${diffHtml}
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="btn btn-secondary text-sm px-3 py-1 attendance-edit-btn" data-year="${year}">Edit</button>
+                        <button class="btn bg-red-500 text-white text-sm px-3 py-1 delete-btn" data-year="${year}" data-type="attendance">Delete</button>
+                    </div>
+                `;
+                attendanceHistoryList.appendChild(attendanceItem);
+            });
+            
+            document.querySelectorAll('.attendance-edit-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                const year = e.target.dataset.year;
+                const count = simulatedYearlyAttendance[year];
+                attendanceYearInput.value = year;
+                attendanceCountInput.value = count;
+            }));
+            document.querySelectorAll('.delete-btn[data-type="attendance"]').forEach(btn => btn.addEventListener('click', (e) => {
+                const year = e.target.dataset.year;
+                showDeleteModal(`Are you sure you want to delete attendance for ${year}?`, () => {
+                    deleteDoc('yearlyAttendance', year);
+                });
+            }));
+        }
+        
+        function renderDashboardContributions(data) {
+            const years = Object.keys(data).sort();
+            const yearSelect = dashboardYearSelect;
+
+            if (yearSelect) {
+                 yearSelect.innerHTML = '';
+                 years.forEach(year => {
+                     const option = document.createElement('option');
+                     option.value = year;
+                     option.textContent = year;
+                     yearSelect.appendChild(option);
+                 });
+                 yearSelect.value = dashboardYear;
+                 yearSelect.addEventListener('change', (e) => {
+                    dashboardYear = e.target.value;
+                    renderDashboardSummary(simulatedSponsors);
+                 });
+            }
+            
+            const amounts = years.map(year => data[year]);
+            if (dashboardContributionChartInstance) {
+                dashboardContributionChartInstance.destroy();
+            }
+
+            const dashboardCanvas = document.getElementById('dashboard-contribution-graph');
+            if (dashboardCanvas) {
+                const ctx = dashboardCanvas.getContext('2d');
+                dashboardContributionChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: years,
+                        datasets: [{
+                            label: 'Contributions',
+                            data: amounts,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { display: true },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return `$${value.toLocaleString()}`;
+                                    }
+                                }
+                            }
+                        },
+                        layout: { padding: 0 },
+                    }
+                });
+            }
+        }
+        
+        function renderYearlyTrackingContributions(data) {
+            if (yearlyTrackingContributionChartInstance) {
+                yearlyTrackingContributionChartInstance.destroy();
+            }
+            const years = Object.keys(data).sort();
+            const amounts = years.map(year => data[year]);
+            const yearsSelect = yearlyTrackingContributionYearSelect;
+            const contributionsDisplay = yearlyTrackingYearlyContributionsEl;
+            const canvas = yearlyTrackingContributionGraphCanvas;
+
+            if (years.length === 0) {
+                if (contributionsDisplay) contributionsDisplay.textContent = '$0.00';
+                if (yearsSelect) yearsSelect.innerHTML = '';
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.font = '16px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = '#6b7280';
+                    ctx.fillText('No contributions to display.', canvas.width / 2, canvas.height / 2);
+                }
+                return;
+            }
+            
+            if (yearsSelect) {
+                 yearsSelect.innerHTML = '';
+                 years.forEach(year => {
+                     const option = document.createElement('option');
+                     option.value = year;
+                     option.textContent = year;
+                     yearsSelect.appendChild(option);
+                 });
+                 yearsSelect.value = years[years.length - 1];
+                 yearsSelect.addEventListener('change', (e) => {
+                    const newYear = e.target.value;
+                    const newAmount = data[newYear] || 0;
+                    if (contributionsDisplay) contributionsDisplay.textContent = `$${newAmount.toFixed(2)}`;
+                 });
+            }
+
+            const selectedYear = yearsSelect?.value || years[years.length -1];
+            const selectedYearContribution = data[selectedYear] || 0;
+            if (contributionsDisplay) contributionsDisplay.textContent = `$${selectedYearContribution.toFixed(2)}`;
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                yearlyTrackingContributionChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: years,
+                        datasets: [{
+                            label: 'Contributions',
+                            data: amounts,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { display: true },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return `$${value.toLocaleString()}`;
+                                    }
+                                }
+                            }
+                        },
+                        layout: { padding: 0 },
+                    }
+                });
+            }
+        }
+        
+        function drawAttendanceChart(years, counts) {
+            if (attendanceChartInstance) {
+                attendanceChartInstance.destroy();
+            }
+            if (dashboardAttendanceChartInstance) {
+                dashboardAttendanceChartInstance.destroy();
+            }
+            
+            const canvas = attendanceGraphCanvas;
+            const ctx = canvas?.getContext('2d');
+            
+            const dashboardCanvas = document.getElementById('dashboard-attendance-graph');
+            const dashboardCtx = dashboardCanvas?.getContext('2d');
+            
+            if (years.length === 0) {
+                if (canvas) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.font = '16px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = '#6b7280';
+                    ctx.fillText('No attendance to display.', canvas.width / 2, canvas.height / 2);
+                }
+                if (dashboardCanvas) {
+                    dashboardCtx.clearRect(0, 0, dashboardCanvas.width, dashboardCanvas.height);
+                    dashboardCtx.font = '16px Inter';
+                    dashboardCtx.textAlign = 'center';
+                    dashboardCtx.fillStyle = '#6b7280';
+                    dashboardCtx.fillText('No attendance to display.', dashboardCanvas.width / 2, dashboardCanvas.height / 2);
+                }
+                 
+                 return;
+            }
+            if (canvas) {
+                attendanceChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: years,
+                        datasets: [{
+                            label: 'Total Attendance',
+                            data: counts,
+                            backgroundColor: '#2563eb',
+                            borderColor: '#1d4ed8',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: { 
+                                display: true, 
+                                text: 'Attendance by Year',
+                                font: { size: 18 }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            if (dashboardCanvas) {
+                dashboardAttendanceChartInstance = new Chart(dashboardCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: years,
+                        datasets: [{
+                            label: 'Total Attendance',
+                            data: counts,
+                            backgroundColor: '#2563eb',
+                            borderColor: '#1d4ed8',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: { 
+                                display: true, 
+                                text: 'Attendance by Year',
+                                font: { size: 18 }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        function renderSponsorContributions(sponsors) {
+            sponsorContributionsList.innerHTML = '';
+            const activeSponsors = sponsors.filter(s => s.status === 'Active' && s.amount > 0).sort((a,b) => b.amount - a.amount);
+            
+            if (activeSponsors.length === 0) {
+                 sponsorContributionsList.innerHTML = '<p class="text-center text-gray-500">No active sponsors with contributions to display.</p>';
+                 return;
+            }
+
+            activeSponsors.forEach(sponsor => {
+                const contributionItem = document.createElement('div');
+                contributionItem.className = 'flex justify-between items-center p-4 card shadow-md hover:shadow-lg';
+                contributionItem.innerHTML = `
+                    <span class="font-medium text-gray-800">${sponsor.name}</span>
+                    <span class="font-bold text-gray-700">$${sponsor.amount.toFixed(2)}</span>
+                `;
+                sponsorContributionsList.appendChild(contributionItem);
+            });
+        }
+        
+        function renderTasks() {
+            taskList.innerHTML = '';
+            const selectedYear = dashboardYear;
+            const yearlyTasks = simulatedTasks.filter(t => t.dueDate && new Date(t.dueDate).getFullYear().toString() === selectedYear);
+            
+            if (yearlyTasks.length === 0) {
+                taskList.innerHTML = '<p class="text-center text-gray-500">No tasks added yet. Add one using the form above!</p>';
+                return;
+            }
+            
+            const sortedTasks = [...yearlyTasks].sort((a, b) => {
+                const aCompleted = a.isCompleted || false;
+                const bCompleted = b.isCompleted || false;
+
+                if (aCompleted && !bCompleted) return 1;
+                if (!aCompleted && bCompleted) return -1;
+                
+                const aDate = a.dueDate ? new Date(a.dueDate) : null;
+                const bDate = b.dueDate ? new Date(b.dueDate) : null;
+                
+                if (aDate && bDate) {
+                    return aDate - bDate;
+                }
+                if (aDate) return -1;
+                if (bDate) return 1;
+                
+                return 0;
+            });
+
+            sortedTasks.forEach(task => {
+                const taskEl = document.createElement('div');
+                taskEl.className = 'card p-4 flex flex-col justify-between h-48 shadow-md hover:shadow-lg';
+                taskEl.innerHTML = `
+                    <div class="flex items-center">
+                        <input type="checkbox" data-id="${task.id}" ${task.isCompleted ? 'checked' : ''} class="task-checkbox mr-4 h-6 w-6 text-blue-600 rounded">
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-lg ${task.isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}">${task.name}</h4>
+                        </div>
+                    </div>
+                    ${task.notes ? `<p class="text-sm text-gray-500 italic flex-grow mt-2">${task.notes}</p>` : ''}
+                    ${task.dueDate ? `
+                        <div class="flex items-center text-sm text-gray-500 mt-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 mr-1"><path fill-rule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5.5V2.75A.75.75 0 016.25 2zM4.75 5.5c-.138 0-.25.112-.25.25v9.5c0 .138.112.25.25.25h10.5c.138 0 .25-.112.25-.25v-9.5c0-.138-.112-.25-.25-.25H4.75z" clip-rule="evenodd" /><path d="M8.75 11.25a.25.25 0 000 .5h2.5a.25.25 0 000-.5h-2.5z" /></svg>
+                            Due: ${new Date(task.dueDate).toLocaleDateString()}
+                        </div>
+                    ` : ''}
+                    <div class="flex space-x-2 mt-4">
+                        <button class="btn btn-secondary text-sm px-3 py-1 task-edit-btn flex-1" data-id="${task.id}">Edit</button>
+                        <button class="btn bg-red-500 text-white text-sm px-3 py-1 delete-btn" data-id="${task.id}" data-type="task">Delete</button>
+                    </div>
+                `;
+                taskList.appendChild(taskEl);
+            });
+            
+            // Attach event listeners
+            document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', async (e) => {
+                    const taskId = e.target.dataset.id;
+                    const isCompleted = e.target.checked;
+                    await setDoc('tasks', taskId, { isCompleted: isCompleted });
+                    showNotification('Task status updated!');
+                });
+            });
+            document.querySelectorAll('.task-edit-btn').forEach(btn => btn.addEventListener('click', handleTaskEdit));
+            document.querySelectorAll('.delete-btn[data-type="task"]').forEach(btn => btn.addEventListener('click', handleDeleteClick));
+        }
+
+        function renderUpcomingEvents(events) {
+            upcomingEventsListEl.innerHTML = '';
+            const now = new Date();
+            const selectedYear = dashboardYear;
+            const upcoming = events.filter(event => 
+                event.date && new Date(event.date) >= now &&
+                new Date(event.date).getFullYear().toString() === selectedYear
+            ).sort((a,b) => new Date(a.date) - new Date(b.date));
+            
+            if (upcoming.length === 0) {
+                upcomingEventsListEl.innerHTML = '<p class="text-gray-500">No upcoming events.</p>';
+                return;
+            }
+
+            upcoming.forEach(event => {
+                const eventDate = new Date(event.date);
+                const eventItem = document.createElement('div');
+                eventItem.className = 'card p-4 shadow-md';
+                eventItem.innerHTML = `
+                    <div class="font-bold text-lg text-gray-800">${event.name}</div>
+                    <div class="text-sm text-gray-600">${eventDate.toLocaleDateString()} ${event.time || ''}</div>
+                `;
+                upcomingEventsListEl.appendChild(eventItem);
+            });
+        }
+
+        function renderOverdueTasks(tasks) {
+            overdueTasksListEl.innerHTML = '';
+            const now = new Date();
+            const selectedYear = dashboardYear;
+            const overdue = tasks.filter(task => 
+                task.dueDate && !task.isCompleted && new Date(task.dueDate) < now &&
+                new Date(task.dueDate).getFullYear().toString() === selectedYear
+            ).sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
+            
+            if (overdue.length === 0) {
+                overdueTasksListEl.innerHTML = '<p class="text-gray-500">No overdue tasks.</p>';
+                return;
+            }
+
+            overdue.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'card p-4 bg-red-50 shadow-md';
+                taskItem.innerHTML = `
+                    <div class="font-bold text-lg text-red-800">${task.name}</div>
+                    <div class="text-sm text-red-600">Due: ${new Date(task.dueDate).toLocaleDateString()}</div>
+                `;
+                overdueTasksListEl.appendChild(taskItem);
+            });
+        }
+        
+        // --- Calendar & Event Functions ---
+        function renderCalendar() {
+            const today = new Date();
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const totalDays = lastDay.getDate();
+            const startDay = firstDay.getDay();
+
+            currentMonthEl.textContent = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+            calendarBody.innerHTML = '';
+
+            // Add empty cells for the start of the month
+            for (let i = 0; i < startDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-cell';
+                calendarBody.appendChild(emptyCell);
+            }
+
+            // Add date cells
+            for (let i = 1; i <= totalDays; i++) {
+                const date = new Date(year, month, i);
+                const dateString = date.toISOString().split('T')[0];
+                const hasEvent = simulatedEvents.some(event => event.date === dateString);
+                
+                const cell = document.createElement('div');
+                cell.className = `calendar-cell relative`;
+                if (date.toDateString() === today.toDateString()) {
+                    cell.classList.add('today');
+                }
+                if (hasEvent) {
+                    cell.classList.add('has-event');
+                }
+                cell.dataset.date = dateString;
+                cell.innerHTML = `<span>${i}</span>`;
+                cell.addEventListener('click', () => {
+                    const existingEvent = simulatedEvents.find(event => event.date === dateString);
+                    showEventModal(dateString, existingEvent);
+                });
+                calendarBody.appendChild(cell);
+            }
+        }
+        
+        function showEventModal(dateString, eventData = null) {
+            eventModal.classList.remove('hidden');
+            eventModal.classList.add('flex');
+            
+            eventForm.reset();
+            eventDeleteBtn.classList.add('hidden');
+            
+            eventDateInput.value = dateString;
+            
+            if (eventData) {
+                eventModalTitle.textContent = "Edit Event";
+                eventIdInput.value = eventData.id;
+                eventNameInput.value = eventData.name;
+                eventNotesInput.value = eventData.notes || '';
+                eventTimeInput.value = eventData.time || '';
+                eventSubmitBtn.textContent = 'Update Event';
+                eventDeleteBtn.classList.remove('hidden');
+            } else {
+                eventModalTitle.textContent = "Add New Event";
+                eventIdInput.value = '';
+                eventSubmitBtn.textContent = 'Save Event';
+            }
+        }
+
+        function hideEventModal() {
+            eventModal.classList.remove('flex');
+            eventModal.classList.add('hidden');
+        }
+
+        // --- Event Handlers ---
+        // Sponsors
+        addSponsorBtn.addEventListener('click', () => {
+            const isFormHidden = addEditSponsorModal.classList.contains('hidden');
+            if (isFormHidden) {
+                showAddEditSponsorModal();
+            }
+        });
+
+        exportSponsorsBtn.addEventListener('click', () => {
+            if (displayedSponsors.length === 0) {
+                showNotification("No sponsor data to export.", true);
+                return;
+            }
+            exportSponsorsToCsv(displayedSponsors);
+        });
+
+        function exportSponsorsToCsv(data) {
+            if (data.length === 0) {
+                showNotification("No sponsor data to export.", true);
+                return;
+            }
+
+            const header = [
+                "ID", "Company Name", "Contact Name", "Email", "Phone", "Sponsor Year", "Sponsor Type", "Amount", "Status",
+                "Contract Received", "Logo Received", "Banner Placed", "Payment Received",
+                "Task: Follow Up", "Task: Meet with Them", "Task: Send Event Invite", "Task: Waiting for RSVP",
+                "Task: Confirmed RSVP", "Task: End of the Year Wrap Up", "Task: Email Them",
+                "Tickets: GA (Wed)", "Tickets: VIP (Wed)", "Tickets: GA (Thu)", "Tickets: VIP (Thu)",
+                "Tickets: GA (Fri)", "Tickets: VIP (Fri)", "Tickets: GA (Sat)", "Tickets: VIP (Sat)",
+                "Tickets: GA (Sun)", "Tickets: VIP (Sun)",
+                "Notes", "Date Added"
+            ].join(',');
+
+            const csvRows = data.map(sponsor => {
+                const tasks = sponsor.sponsorTasks || {};
+                const tickets = sponsor.tickets || {};
+                const ticketDays = ['wed', 'thu', 'fri', 'sat', 'sun'];
+
+                const row = [
+                    sponsor.id,
+                    `"${(sponsor.company || '').replace(/"/g, '""')}"`,
+                    `"${(sponsor.name || '').replace(/"/g, '""')}"`,
+                    `"${(sponsor.contact || '').replace(/"/g, '""')}"`,
+                    `"${(sponsor.phone || '').replace(/"/g, '""')}"`,
+                    sponsor.sponsorYear || '',
+                    `"${(sponsor.type || '').replace(/"/g, '""')}"`,
+                    sponsor.amount || 0,
+                    sponsor.status || '',
+                    sponsor.isContractSigned ? 'Yes' : 'No',
+                    sponsor.isLogoReceived ? 'Yes' : 'No',
+                    sponsor.isBannerPlaced ? 'Yes' : 'No',
+                    sponsor.isPaymentReceived ? 'Yes' : 'No',
+                    tasks['Follow-up'] ? 'Yes' : 'No',
+                    tasks['Meet with Them'] ? 'Yes' : 'No',
+                    tasks['Send Event Invite'] ? 'Yes' : 'No',
+                    tasks['Waiting for RSVP'] ? 'Yes' : 'No',
+                    tasks['Confirmed RSVP'] ? 'Yes' : 'No',
+                    tasks['End of the Year Wrap Up'] ? 'Yes' : 'No',
+                    tasks['Email Them'] ? 'Yes' : 'No',
+                    tickets.wed?.general || 0,
+                    tickets.wed?.vip || 0,
+                    tickets.thu?.general || 0,
+                    tickets.thu?.vip || 0,
+                    tickets.fri?.general || 0,
+                    tickets.fri?.vip || 0,
+                    tickets.sat?.general || 0,
+                    tickets.sat?.vip || 0,
+                    tickets.sun?.general || 0,
+                    tickets.sun?.vip || 0,
+                    `"${(sponsor.notes || '').replace(/"/g, '""')}"`,
+                    sponsor.date || ''
+                ];
+                return row.join(',');
+            });
+
+            const csvString = [header, ...csvRows].join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'SponsorHub_Data.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showNotification('Sponsor data exported successfully!');
+        }
+
+        
+        sponsorForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!authReady) {
+                showNotification("Authentication not ready. Please wait.", true);
+                return;
+            }
+
+            const name = document.getElementById('sponsor-name').value;
+            const company = document.getElementById('sponsor-company').value;
+            const contact = document.getElementById('sponsor-contact').value;
+            const phone = document.getElementById('sponsor-phone').value;
+            const type = document.getElementById('sponsor-type').value;
+            const amount = parseFloat(document.getElementById('sponsor-amount').value);
+            const status = document.getElementById('sponsor-status').value;
+            const notes = document.getElementById('sponsor-notes').value;
+            const sponsorId = sponsorIdInput.value;
+            const sponsorYear = parseInt(document.getElementById('sponsor-year').value, 10);
+
+            const isContractSigned = contractStatusEl.checked;
+            const isLogoReceived = logoStatusEl.checked;
+            const isBannerPlaced = bannerStatusEl.checked;
+            const isPaymentReceived = paymentStatusEl.checked;
+            
+            const sponsorTasks = {
+                'Follow-up': taskFollowUpEl.checked,
+                'Meet with Them': taskMeetEl.checked,
+                'Send Event Invite': taskSendInviteEl.checked,
+                'Waiting for RSVP': taskWaitingRsvpEl.checked,
+                'Confirmed RSVP': taskConfirmedRsvpEl.checked,
+                'End of the Year Wrap Up': taskEndWrapUpEl.checked,
+                'Email Them': taskEmailThemEl.checked,
+            };
+
+            const tickets = {};
+            days.forEach(day => {
+                const gaTickets = parseInt(document.getElementById(`tickets-ga-${day}`).value, 10) || 0;
+                const vipTickets = parseInt(document.getElementById(`tickets-vip-${day}`).value, 10) || 0;
+                if (gaTickets > 0 || vipTickets > 0) {
+                     tickets[day] = {
+                        general: gaTickets,
+                        vip: vipTickets,
+                     };
+                }
+            });
+
+            const sponsorData = {
+                name, company, contact, phone, type, amount, status, notes,
+                isContractSigned, isLogoReceived, isBannerPlaced, isPaymentReceived,
+                sponsorTasks,
+                tickets,
+                date: new Date().toISOString(),
+                sponsorYear,
+            };
+
+            try {
+                if (isEditing && sponsorId) {
+                    await setDoc('sponsors', sponsorId, sponsorData);
+                    showNotification('Sponsor updated successfully!');
+                } else {
+                    await addDoc('sponsors', sponsorData);
+                    showNotification('Sponsor added successfully!');
+                }
+                resetSponsorForm();
+                hideAddEditSponsorModal();
+            } catch (error) {
+                console.error("Error saving sponsor:", error);
+                showNotification("Failed to save sponsor.", true);
+            }
+        });
+
+        async function handleEdit(e) {
+            const sponsorId = e.target.dataset.id;
+            try {
+                const data = simulatedSponsors.find(s => s.id === sponsorId);
+                
+                if (data) {
+                    document.getElementById('sponsor-id').value = sponsorId;
+                    document.getElementById('sponsor-name').value = data.name;
+                    document.getElementById('sponsor-company').value = data.company || '';
+                    document.getElementById('sponsor-contact').value = data.contact;
+                    document.getElementById('sponsor-phone').value = data.phone || '';
+                    document.getElementById('sponsor-type').value = data.type || '';
+                    document.getElementById('sponsor-amount').value = data.amount;
+                    document.getElementById('sponsor-status').value = data.status;
+                    document.getElementById('sponsor-notes').value = data.notes;
+                    
+                    contractStatusEl.checked = data.isContractSigned || false;
+                    logoStatusEl.checked = data.isLogoReceived || false;
+                    bannerStatusEl.checked = data.isBannerPlaced || false;
+                    paymentStatusEl.checked = data.isPaymentReceived || false;
+                    
+                    const tasks = data.sponsorTasks || {};
+                    taskFollowUpEl.checked = tasks['Follow-up'] || false;
+                    taskMeetEl.checked = tasks['Meet with Them'] || false;
+                    taskSendInviteEl.checked = tasks['Send Event Invite'] || false;
+                    taskWaitingRsvpEl.checked = tasks['Waiting for RSVP'] || false;
+                    taskConfirmedRsvpEl.checked = tasks['Confirmed RSVP'] || false;
+                    taskEndWrapUpEl.checked = tasks['End of the Year Wrap Up'] || false;
+                    taskEmailThemEl.checked = tasks['Email Them'] || false;
+                    
+                    days.forEach(day => {
+                        document.getElementById(`tickets-ga-${day}`).value = data.tickets?.[day]?.general || 0;
+                        document.getElementById(`tickets-vip-${day}`).value = data.tickets?.[day]?.vip || 0;
+                    });
+                    
+                    document.getElementById('sponsor-year').value = data.sponsorYear || new Date().getFullYear();
+
+                    formTitle.textContent = "Edit Sponsor";
+                    submitBtn.textContent = "Update Sponsor";
+                    cancelEditBtn.classList.remove('hidden');
+                    isEditing = true;
+                    
+                    hideSponsorDetailModal();
+                    showAddEditSponsorModal(sponsorId);
+                } else {
+                    showNotification("Sponsor not found.", true);
+                }
+            } catch (error) {
+                console.error("Error fetching sponsor for edit:", error);
+                showNotification("Failed to load sponsor data.", true);
+            }
+        }
+
+        function handleDeleteClick(e) {
+            const itemId = e.target.dataset.id;
+            const itemType = e.target.dataset.type;
+            let deleteFunc;
+            let modalText;
+
+            switch (itemType) {
+                case 'sponsor':
+                case 'contact':
+                    deleteFunc = (id) => deleteDoc('sponsors', id);
+                    modalText = "Are you sure you want to delete this sponsor?";
+                    break;
+                case 'task':
+                    deleteFunc = (id) => deleteDoc('tasks', id);
+                    modalText = "Are you sure you want to delete this task?";
+                    break;
+                case 'event':
+                    deleteFunc = (id) => deleteDoc('events', id);
+                    modalText = "Are you sure you want to delete this event?";
+                    break;
+                case 'attendance':
+                    deleteFunc = (id) => deleteDoc('yearlyAttendance', id);
+                    modalText = "Are you sure you want to delete this attendance history?";
+                    break;
+                case 'note':
+                    deleteFunc = (id) => deleteDoc('notes', id);
+                    modalText = "Are you sure you want to delete this note?";
+                    break;
+                case 'asset':
+                    deleteFunc = (id) => deleteDoc('assets', id);
+                    modalText = "Are you sure you want to delete this asset?";
+                    break;
+                default:
+                    return;
+            }
+
+            showDeleteModal(modalText, () => {
+                deleteFunc(itemId);
+            });
+        }
+
+        async function handleDelete(id) {
+            try {
+                await deleteDoc('sponsors', id);
+                showNotification('Sponsor deleted successfully!');
+                hideSponsorDetailModal();
+            } catch (error) {
+                console.error("Error deleting sponsor:", error);
+                showNotification("Failed to delete sponsor.", true);
+            }
+        }
+
+        function resetSponsorForm() {
+            sponsorForm.reset();
+            isEditing = false;
+            sponsorIdInput.value = '';
+            formTitle.textContent = "Add New Sponsor";
+            submitBtn.textContent = "Add Sponsor";
+            cancelEditBtn.classList.add('hidden');
+            
+            days.forEach(day => {
+                document.getElementById(`tickets-ga-${day}`).value = 0;
+                document.getElementById(`tickets-vip-${day}`).value = 0;
+            });
+            document.getElementById('sponsor-year').value = new Date().getFullYear();
+        }
+        
+        function showAddEditSponsorModal(sponsorId = null) {
+            addEditSponsorModal.classList.remove('hidden');
+            addEditSponsorModal.classList.add('flex');
+            resetSponsorForm();
+            populateYearSelects();
+            if (sponsorId) {
+                const sponsor = simulatedSponsors.find(s => s.id === sponsorId);
+                if (sponsor) {
+                     document.getElementById('sponsor-id').value = sponsor.id;
+                    document.getElementById('sponsor-name').value = sponsor.name;
+                    document.getElementById('sponsor-company').value = sponsor.company || '';
+                    document.getElementById('sponsor-contact').value = sponsor.contact;
+                    document.getElementById('sponsor-phone').value = sponsor.phone || '';
+                    document.getElementById('sponsor-type').value = sponsor.type || '';
+                    document.getElementById('sponsor-amount').value = sponsor.amount;
+                    document.getElementById('sponsor-status').value = sponsor.status;
+                    document.getElementById('sponsor-notes').value = sponsor.notes;
+                    
+                    contractStatusEl.checked = sponsor.isContractSigned || false;
+                    logoStatusEl.checked = sponsor.isLogoReceived || false;
+                    bannerStatusEl.checked = sponsor.isBannerPlaced || false;
+                    paymentStatusEl.checked = sponsor.isPaymentReceived || false;
+                    
+                    const tasks = sponsor.sponsorTasks || {};
+                    taskFollowUpEl.checked = tasks['Follow-up'] || false;
+                    taskMeetEl.checked = tasks['Meet with Them'] || false;
+                    taskSendInviteEl.checked = tasks['Send Event Invite'] || false;
+                    taskWaitingRsvpEl.checked = tasks['Waiting for RSVP'] || false;
+                    taskConfirmedRsvpEl.checked = tasks['Confirmed RSVP'] || false;
+                    taskEndWrapUpEl.checked = tasks['End of the Year Wrap Up'] || false;
+                    taskEmailThemEl.checked = tasks['Email Them'] || false;
+                    
+                    days.forEach(day => {
+                        document.getElementById(`tickets-ga-${day}`).value = sponsor.tickets?.[day]?.general || 0;
+                        document.getElementById(`tickets-vip-${day}`).value = sponsor.tickets?.[day]?.vip || 0;
+                    });
+                    
+                    document.getElementById('sponsor-year').value = sponsor.sponsorYear || new Date().getFullYear();
+
+                    formTitle.textContent = "Edit Sponsor";
+                    submitBtn.textContent = "Update Sponsor";
+                    cancelEditBtn.classList.remove('hidden');
+                    isEditing = true;
+                }
+            }
+        }
+        
+        function hideAddEditSponsorModal() {
+            addEditSponsorModal.classList.add('hidden');
+        }
+        
+        addSponsorBtn.addEventListener('click', () => showAddEditSponsorModal());
+        closeAddEditSponsorModalBtn.addEventListener('click', () => hideAddEditAssetModal());
+        assetCancelBtn.addEventListener('click', () => {
+            resetAssetForm();
+            hideAddEditAssetModal();
+        });
+        cancelEditBtn.addEventListener('click', () => {
+            resetSponsorForm();
+            hideAddEditSponsorModal();
+        });
+        
+        // Contacts
+        contactSearchInput.addEventListener('input', renderContacts);
+        
+        // My Sponsors sorting/filtering listeners
+        sponsorSearchInput.addEventListener('input', renderSponsors);
+        sponsorSortSelect.addEventListener('change', renderSponsors);
+        sponsorFilterSelect.addEventListener('change', renderSponsors);
+
+        // Notes
+        addNoteBtn.addEventListener('click', () => {
+            showNoteModal();
+        });
+        
+        noteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!authReady) {
+                showNotification("Authentication not ready. Please wait.", true);
+                return;
+            }
+            
+            const noteId = noteIdInput.value;
+            const noteData = {
+                title: noteTitleInput.value,
+                content: noteContentInput.value,
+                sponsorId: noteSponsorSelect.value || null,
+                dateAdded: new Date().toISOString()
+            };
+            
+            try {
+                if (isNoteEditing && noteId) {
+                    await setDoc('notes', noteId, noteData);
+                    showNotification('Note updated successfully!');
+                } else {
+                    await addDoc('notes', noteData);
+                    showNotification('Note added successfully!');
+                }
+                hideNoteModal();
+            } catch (error) {
+                console.error("Error saving note:", error);
+                showNotification("Failed to save note.", true);
+            }
+        });
+        
+        noteCancelBtn.addEventListener('click', hideNoteModal);
+        
+        async function handleNoteEdit(e) {
+            const noteId = e.target.dataset.id;
+            try {
+                const data = simulatedNotes.find(n => n.id === noteId);
+                if (data) {
+                    showNoteModal(data);
+                    noteIdInput.value = noteId;
+                    isNoteEditing = true;
+                } else {
+                    showNotification("Note not found.", true);
+                }
+            } catch (error) {
+                console.error("Error fetching note for edit:", error);
+                showNotification("Failed to load note data.", true);
+            }
+        }
+        
+        async function handleNoteDelete(noteId) {
+            try {
+                await deleteDoc('notes', noteId);
+                showNotification('Note deleted successfully!');
+            } catch (error) {
+                console.error("Error deleting note:", error);
+                showNotification("Failed to delete note.", true);
+            }
+        }
+        
+        function showNoteModal(noteData = null) {
+            noteModal.classList.remove('hidden');
+            noteModal.classList.add('flex');
+            
+            noteForm.reset();
+            isNoteEditing = false;
+            
+            if (noteData) {
+                noteModalTitle.textContent = "Edit Note";
+                noteTitleInput.value = noteData.title;
+                noteContentInput.value = noteData.content;
+                noteSponsorSelect.value = noteData.sponsorId;
+                noteIdInput.value = noteData.id;
+                noteSubmitBtn.textContent = 'Update Note';
+                isNoteEditing = true;
+            } else {
+                noteModalTitle.textContent = "Add New Note";
+                noteSubmitBtn.textContent = 'Save Note';
+            }
+        }
+        
+        function hideNoteModal() {
+            noteModal.classList.remove('flex');
+            noteModal.classList.add('hidden');
+        }
+
+        // Assets
+        addAssetBtn.addEventListener('click', () => {
+            showAddEditAssetModal();
+        });
+
+        assetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!authReady) {
+                showNotification("Authentication not ready. Please wait.", true);
+                return;
+            }
+
+            const assetId = assetIdInput.value;
+            const assetData = {
+                name: document.getElementById('asset-name').value,
+                description: assetDescriptionInput.value,
+                amount: parseInt(assetAmountInput.value, 10),
+                price: parseFloat(assetPriceInput.value),
+                isAvailable: assetAvailableCheckbox.checked,
+                sponsorId: document.getElementById('asset-sponsor-id').value || null,
+                dateAdded: new Date().toISOString()
+            };
+            
+            try {
+                if (isAssetEditing && assetId) {
+                    await setDoc('assets', assetId, assetData);
+                    showNotification('Asset updated successfully!');
+                } else {
+                    await addDoc('assets', assetData);
+                    showNotification('Asset added successfully!');
+                }
+                resetAssetForm();
+                hideAddEditAssetModal();
+            } catch (error) {
+                console.error("Error saving asset:", error);
+                showNotification("Failed to save asset.", true);
+            }
+        });
+        
+        async function handleAssetEdit(e) {
+            const assetId = e.target.dataset.id;
+            try {
+                const data = simulatedAssets.find(a => a.id === assetId);
+                if (data) {
+                    showAddEditAssetModal(data);
+                    assetIdInput.value = assetId;
+                    isAssetEditing = true;
+                } else {
+                    showNotification("Asset not found.", true);
+                }
+            } catch (error) {
+                console.error("Error fetching asset for edit:", error);
+                showNotification("Failed to load asset data.", true);
+            }
+        }
+
+        async function handleAssetDelete(assetId) {
+            try {
+                await deleteDoc('assets', assetId);
+                showNotification('Asset deleted successfully!');
+            } catch (error) {
+                console.error("Error deleting asset:", error);
+                showNotification("Failed to delete asset.", true);
+            }
+        }
+
+        function showAddEditAssetModal(assetData = null) {
+            addEditAssetModal.classList.remove('hidden');
+            addEditAssetModal.classList.add('flex');
+            resetAssetForm();
+            isAssetEditing = false;
+            
+            const assetSponsorSelect = document.getElementById('asset-sponsor-id');
+            populateAssetSponsorDropdown(assetSponsorSelect);
+            
+
+            if (assetData) {
+                assetFormTitle.textContent = "Edit Asset";
+                assetIdInput.value = assetData.id;
+                document.getElementById('asset-name').value = assetData.name;
+                assetDescriptionInput.value = assetData.description;
+                assetAmountInput.value = assetData.amount;
+                assetPriceInput.value = assetData.price;
+                assetAvailableCheckbox.checked = assetData.isAvailable;
+                assetSponsorSelect.value = assetData.sponsorId || '';
+                assetSubmitBtn.textContent = 'Update Asset';
+                isAssetEditing = true;
+            } else {
+                assetFormTitle.textContent = "Add New Asset";
+                assetSubmitBtn.textContent = 'Save Asset';
+            }
+        }
+        
+        function hideAddEditAssetModal() {
+            addEditAssetModal.classList.add('hidden');
+        }
+
+        function resetAssetForm() {
+            assetForm.reset();
+            assetIdInput.value = '';
+            assetFormTitle.textContent = "Add New Asset";
+            assetSubmitBtn.textContent = "Save Asset";
+            assetAvailableCheckbox.checked = false;
+        }
+
+        // Event Modal Handlers
+        eventForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!authReady) {
+                showNotification("Authentication not ready. Please wait.", true);
+                return;
+            }
+
+            const eventId = eventIdInput.value;
+            const eventData = {
+                date: eventDateInput.value,
+                time: eventTimeInput.value,
+                name: eventNameInput.value,
+                notes: eventNotesInput.value,
+                dateAdded: new Date().toISOString()
+            };
+            
+            try {
+                if (eventId) {
+                    await setDoc('events', eventId, eventData);
+                    showNotification('Event updated successfully!');
+                } else {
+                    await addDoc('events', eventData);
+                    showNotification('Event added successfully!');
+                }
+                hideEventModal();
+            } catch (error) {
+                console.error("Error saving event:", error);
+                showNotification("Failed to save event.", true);
+            }
+        });
+
+        eventCancelBtn.addEventListener('click', hideEventModal);
+        
+        async function handleEventDelete(eventId) {
+            try {
+                await deleteDoc('events', eventId);
+                showNotification('Event deleted successfully!');
+            } catch (error) {
+                console.error("Error deleting event:", error);
+                showNotification("Failed to delete event.", true);
+            }
+        }
+        eventDeleteBtn.addEventListener('click', (e) => {
+            const eventId = eventIdInput.value;
+            document.getElementById('delete-modal-text').textContent = "Are you sure you want to delete this event?";
+            showDeleteModal(() => handleEventDelete(eventId));
+            hideEventModal();
+        });
+
+        // Task Handlers
+        taskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!authReady) {
+                showNotification("Authentication not ready. Please wait.", true);
+                return;
+            }
+
+            const taskId = taskIdInput.value;
+            const taskData = {
+                name: taskNameInput.value,
+                notes: taskNotesInput.value,
+                dueDate: taskDueDateInput.value,
+                isCompleted: false,
+                dateAdded: new Date().toISOString()
+            };
+
+            try {
+                if (isTaskEditing && taskId) {
+                    await setDoc('tasks', taskId, taskData);
+                    showNotification('Task updated successfully!');
+                } else {
+                    await addDoc('tasks', taskData);
+                    showNotification('Task added successfully!');
+                }
+                resetTaskForm();
+            } catch (error) {
+                console.error("Error saving task:", error);
+                showNotification("Failed to save task.", true);
+            }
+        });
+        
+        taskCancelBtn.addEventListener('click', () => {
+            resetTaskForm();
+        });
+
+        async function handleTaskEdit(e) {
+            const taskId = e.target.dataset.id;
+            try {
+                const data = simulatedTasks.find(t => t.id === taskId);
+                if (data) {
+                    taskIdInput.value = taskId;
+                    taskNameInput.value = data.name;
+                    taskNotesInput.value = data.notes || '';
+                    taskDueDateInput.value = data.dueDate || '';
+                    taskSubmitBtn.textContent = 'Update Task';
+                    taskCancelBtn.classList.remove('hidden');
+                    isTaskEditing = true;
+                } else {
+                    showNotification("Task not found.", true);
+                }
+            } catch (error) {
+                console.error("Error fetching task for edit:", error);
+                showNotification("Failed to load task data.", true);
+            }
+        }
+
+        async function handleTaskDelete(taskId) {
+            try {
+                await deleteDoc('tasks', taskId);
+                showNotification('Task deleted successfully!');
+            } catch (error) {
+                console.error("Error deleting task:", error);
+                showNotification("Failed to delete task.", true);
+            }
+        }
+
+        function resetTaskForm() {
+            taskForm.reset();
+            isTaskEditing = false;
+            taskIdInput.value = '';
+            taskSubmitBtn.textContent = 'Add Task';
+            taskCancelBtn.classList.add('hidden');
+        }
+
+        // Calendar Navigation
+        prevMonthBtn.addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() - 1);
+            renderCalendar();
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+            renderCalendar();
+        });
+
+        // Attendance Form Handler (new)
+        attendanceForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!authReady) {
+                showNotification("Authentication not ready. Please wait.", true);
+                return;
+            }
+            
+            const year = attendanceYearInput.value;
+            const count = parseInt(attendanceCountInput.value, 10);
+
+            if (!year || isNaN(count)) {
+                showNotification("Please enter a valid year and attendance count.", true);
+                return;
+            }
+            
+            try {
+                await setDoc('yearlyAttendance', year, { count: count });
+                showNotification('Attendance data saved successfully!');
+                attendanceCountInput.value = 0;
+            } catch (error) {
+                console.error("Error saving attendance data:", error);
+                showNotification('Failed to save attendance data.', true);
+            }
+        });
+
+        async function handleAttendanceDelete(year) {
+            try {
+                await deleteDoc('yearlyAttendance', year);
+                showNotification(`Attendance for ${year} deleted successfully.`);
+            } catch (error) {
+                console.error("Error deleting attendance:", error);
+                showNotification("Failed to delete attendance data.", true);
+            }
+        }
+        
+        // Listeners for sidebar
+        menuBtn.addEventListener('click', openSidebar);
+        closeSidebarBtn.addEventListener('click', closeSidebar);
+        sidebarBackdrop.addEventListener('click', closeSidebar);
+        
+        // Profile Listeners
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!authReady) {
+                showNotification("Authentication not ready. Please wait.", true);
+                return;
+            }
+            const profileData = {
+                name: profileNameInput.value,
+                email: profileEmailInput.value,
+                bio: profileBioInput.value,
+                userId: userId,
+            };
+            try {
+                // Mock profile update
+                simulatedProfile.name = profileData.name;
+                simulatedProfile.email = profileData.email;
+                simulatedProfile.bio = profileData.bio;
+                showNotification('Profile updated successfully!');
+            } catch (error) {
+                console.error("Error saving profile:", error);
+                showNotification("Failed to save profile.", true);
+            }
+        });
+        
+        signOutBtn.addEventListener('click', async () => {
+            // Mock sign out
+            alert('Sign out attempted. This is a demo; full sign-out requires Firebase Auth.');
+        });
+
+        // Tab switching listeners
+        tabLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = e.target.dataset.target;
+                if (targetId) {
+                    const sponsorId = e.target.dataset.id;
+                    switchTab(targetId, sponsorId);
+                }
+            });
+        });
+
+        // Status review modal listeners
+        statusReviewButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const statusType = e.target.dataset.statusType;
+                if (statusType) {
+                    showStatusModal(statusType);
+                }
+            });
+        });
+
+        closeStatusModalBtn.addEventListener('click', () => {
+            statusModal.classList.add('hidden');
+        });
+        
+        function showStatusModal(statusType) {
+            statusModal.classList.remove('hidden');
+            statusModal.classList.add('flex');
+            
+            const title = statusTypeMap[statusType] || 'Review Status';
+            statusModalTitle.textContent = title;
+            statusModalList.innerHTML = '';
+            
+            simulatedSponsors.forEach(sponsor => {
+                const isChecked = sponsor[statusType] || false;
+                const sponsorName = sponsor.company || sponsor.name;
+                
+                const sponsorItem = document.createElement('div');
+                sponsorItem.className = 'flex items-center justify-between p-4 card shadow-sm';
+                sponsorItem.innerHTML = `
+                    <div class="font-medium text-gray-800">${sponsorName}</div>
+                    <input type="checkbox" data-id="${sponsor.id}" data-status-type="${statusType}" ${isChecked ? 'checked' : ''} class="h-6 w-6 text-blue-600 rounded status-checkbox">
+                `;
+                statusModalList.appendChild(sponsorItem);
+            });
+            
+            document.querySelectorAll('.status-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', handleStatusUpdate);
+            });
+        }
+        
+        async function handleStatusUpdate(e) {
+            const sponsorId = e.target.dataset.id;
+            const statusType = e.target.dataset.statusType;
+            const isChecked = e.target.checked;
+            
+            if (!authReady) {
+                showNotification("Authentication not ready. Please wait.", true);
+                return;
+            }
+            
+            const updateData = {};
+            updateData[statusType] = isChecked;
+            
+            try {
+                await setDoc('sponsors', sponsorId, updateData);
+                showNotification('Sponsor status updated successfully!');
+            } catch (error) {
+                console.error("Error updating sponsor status:", error);
+                showNotification("Failed to update sponsor status.", true);
+            }
+        }
+        
+        // Sponsor Detail Modal Functions
+        function showSponsorDetailModal(sponsor) {
+            sponsorDetailModal.classList.remove('hidden');
+            sponsorDetailModal.classList.add('flex');
+
+            document.getElementById('sponsor-detail-title').textContent = sponsor.company || sponsor.name;
+            detailCompanyName.textContent = sponsor.company || 'N/A';
+            detailContactName.textContent = sponsor.name || 'N/A';
+            detailContactEmail.textContent = sponsor.contact || 'N/A';
+            detailContactPhone.textContent = sponsor.phone || 'N/A';
+            detailSponsorType.textContent = sponsor.type || 'N/A';
+            detailSponsorAmount.textContent = `$${(sponsor.amount || 0).toFixed(2)}`;
+            detailSponsorStatus.textContent = sponsor.status || 'N/A';
+            detailSponsorNotes.textContent = sponsor.notes || 'No notes.';
+
+            detailContractStatus.textContent = sponsor.isContractSigned ? '✅' : '❌';
+            detailLogoStatus.textContent = sponsor.isLogoReceived ? '✅' : '❌';
+            detailBannerStatus.textContent = sponsor.isBannerPlaced ? '✅' : '❌';
+            detailPaymentStatus.textContent = sponsor.isPaymentReceived ? '✅' : '❌';
+
+            const tasks = sponsor.sponsorTasks || {};
+            detailTasksList.innerHTML = '';
+            if (Object.keys(tasks).length > 0) {
+                 Object.keys(tasks).forEach(taskKey => {
+                    const taskEl = document.createElement('li');
+                    taskEl.className = 'flex items-center space-x-2';
+                    taskEl.innerHTML = `<span class="text-lg leading-none">${tasks[taskKey] ? '✅' : '❌'}</span><span>${taskKey.replace(/-/g, ' ')}</span>`;
+                    detailTasksList.appendChild(taskEl);
+                });
+            } else {
+                detailTasksList.innerHTML = '<li class="text-gray-500">No tasks defined.</li>';
+            }
+
+            const tickets = sponsor.tickets || {};
+            detailTicketsList.innerHTML = '';
+            const ticketDays = ['wed', 'thu', 'fri', 'sat', 'sun'];
+            const nonZeroTickets = ticketDays.filter(day => {
+                const dayTickets = tickets[day] || {};
+                return (dayTickets.general > 0 || dayTickets.vip > 0);
+            });
+
+            if (nonZeroTickets.length > 0) {
+                nonZeroTickets.forEach(day => {
+                    const dayTickets = tickets[day];
+                    const gaTickets = dayTickets.general > 0 ? `${dayTickets.general} GA` : '';
+                    const vipTickets = dayTickets.vip > 0 ? `${dayTickets.vip} VIP` : '';
+                    const ticketString = [gaTickets, vipTickets].filter(Boolean).join(' and ');
+                    
+                    const ticketEl = document.createElement('li');
+                    ticketEl.textContent = `${day.charAt(0).toUpperCase() + day.slice(1)}: ${ticketString}`;
+                    detailTicketsList.appendChild(ticketEl);
+                });
+            } else {
+                detailTicketsList.innerHTML = '<li class="text-gray-500">No tickets allotted.</li>';
+            }
+
+            editSponsorDetailBtn.dataset.id = sponsor.id;
+            deleteSponsorDetailBtn.dataset.id = sponsor.id;
+        }
+
+        function hideSponsorDetailModal() {
+            sponsorDetailModal.classList.add('hidden');
+        }
+
+        closeSponsorDetailBtn.addEventListener('click', hideSponsorDetailModal);
+        editSponsorDetailBtn.addEventListener('click', (e) => {
+            const sponsorId = e.target.dataset.id;
+            hideSponsorDetailModal();
+            showAddEditSponsorModal(sponsorId);
+        });
+
+        deleteSponsorDetailBtn.addEventListener('click', (e) => {
+            const sponsorId = e.target.dataset.id;
+            showDeleteModal('Are you sure you want to delete this sponsor?', () => handleDelete(sponsorId));
+        });
+
+
+        window.addEventListener('resize', () => {
+            if (contributionsChartInstance) {
+                contributionsChartInstance.destroy();
+            }
+            if (attendanceChartInstance) {
+                attendanceChartInstance.destroy();
+            }
+            if (dashboardContributionChartInstance) {
+                dashboardContributionChartInstance.destroy();
+            }
+            if (dashboardAttendanceChartInstance) {
+                dashboardAttendanceChartInstance.destroy();
+            }
+            if (yearlyTrackingContributionChartInstance) {
+            }
+                yearlyTrackingContributionChartInstance.destroy();
+            if (yearlyTrackingAttendanceChartInstance) {
+            }
+                yearlyTrackingAttendanceChartInstance.destroy();
+            renderDashboardCharts();
+            renderYearlyTrackingCharts();
+        });          
