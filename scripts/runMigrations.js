@@ -38,6 +38,13 @@ CREATE TABLE IF NOT EXISTS sponsors (
       const client = new Client({ connectionString: process.env.DATABASE_URL });
       await client.connect();
       await client.query(createSql);
+      // Ensure commonly added columns exist even when table existed previously
+      try {
+        await client.query("ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS eventtype TEXT");
+      } catch (e) {
+        // non-fatal
+        console.warn('Could not ensure eventtype column:', e && e.message ? e.message : e);
+      }
       await client.end();
       console.log('Migrations applied via Postgres connection.');
       return;
